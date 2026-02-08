@@ -2,7 +2,16 @@ from __future__ import annotations
 
 import json
 
-from sine.models import RuleCheck, RuleExamples, RuleReporting, RuleSpec, RuleSpecFile
+from sine.models import (
+    ForbiddenCheck,
+    MustWrapCheck,
+    RequiredWithCheck,
+    RuleCheck,
+    RuleExamples,
+    RuleReporting,
+    RuleSpec,
+    RuleSpecFile,
+)
 from sine.semgrep import compile_semgrep_config, parse_semgrep_output
 
 
@@ -32,7 +41,7 @@ def _spec_for(check: RuleCheck) -> RuleSpecFile:
 
 def test_compile_must_wrap() -> None:
     spec = _spec_for(
-        RuleCheck(
+        MustWrapCheck(
             type="must_wrap",
             target=["requests.get"],
             wrapper=["circuit_breaker", "@resilient"],
@@ -49,11 +58,10 @@ def test_compile_must_wrap() -> None:
 
 def test_compile_required_with() -> None:
     spec = _spec_for(
-        RuleCheck(
+        RequiredWithCheck(
             type="required_with",
             if_present="@service",
             must_have="@health_check",
-            scope="function",
         )
     )
     config = compile_semgrep_config([spec])
@@ -64,7 +72,7 @@ def test_compile_required_with() -> None:
 
 
 def test_parse_semgrep_output_normalizes_string_snippet() -> None:
-    spec = _spec_for(RuleCheck(type="forbidden", pattern="eval($X)"))
+    spec = _spec_for(ForbiddenCheck(type="forbidden", pattern="eval($X)"))
     output = json.dumps(
         {
             "results": [
@@ -98,7 +106,7 @@ def test_parse_semgrep_output_maps_multi_segment_guideline_ids() -> None:
             category="security",
             severity="error",
             languages=["python"],
-            check=RuleCheck(type="forbidden", pattern="eval($X)"),
+            check=ForbiddenCheck(type="forbidden", pattern="eval($X)"),
             reporting=RuleReporting(
                 default_message="No eval (PY-SEC-001)",
                 confidence="high",

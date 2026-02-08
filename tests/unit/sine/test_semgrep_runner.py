@@ -4,7 +4,14 @@ import subprocess
 from pathlib import Path
 
 from sine.baseline import Baseline
-from sine.models import Finding, RuleCheck, RuleExamples, RuleReporting, RuleSpec, RuleSpecFile
+from sine.models import (
+    Finding,
+    ForbiddenCheck,
+    RuleExamples,
+    RuleReporting,
+    RuleSpec,
+    RuleSpecFile,
+)
 from sine.runner import run_sine
 
 
@@ -20,7 +27,7 @@ def _spec() -> RuleSpecFile:
             category="security",
             severity="error",
             languages=["python"],
-            check=RuleCheck(type="forbidden", pattern="eval($X)"),
+            check=ForbiddenCheck(type="forbidden", pattern="eval($X)"),
             reporting=RuleReporting(
                 default_message="eval forbidden (ARCH-010)",
                 confidence="high",
@@ -36,6 +43,7 @@ def _finding(message: str = "eval forbidden (ARCH-010)") -> Finding:
     return Finding(
         guideline_id="ARCH-010",
         title="Avoid eval",
+        category="security",
         severity="error",
         file="src/app.py",
         line=7,

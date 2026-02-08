@@ -2,13 +2,22 @@
 
 from __future__ import annotations
 
-from sine.models import PatternInstance, RuleCheck, RuleSpec, RuleSpecFile
+from sine.models import (
+    ForbiddenCheck,
+    PatternDiscoveryCheck,
+    PatternInstance,
+    RuleCheck,
+    RuleExamples,
+    RuleReporting,
+    RuleSpec,
+    RuleSpecFile,
+)
 from sine.semgrep import compile_semgrep_config, parse_semgrep_output
 
 
 def test_pattern_discovery_check_type():
     """Test that pattern_discovery is a valid check type."""
-    check = RuleCheck(
+    check = PatternDiscoveryCheck(
         type="pattern_discovery",
         patterns=[
             "class $MODEL(BaseModel):\n  ...",
@@ -33,16 +42,16 @@ def test_compile_pattern_discovery():
             category="test",
             severity="info",
             languages=["python"],
-            check=RuleCheck(
+            check=PatternDiscoveryCheck(
                 type="pattern_discovery",
                 patterns=["class $MODEL(BaseModel):\n  ..."],
             ),
-            reporting={
-                "default_message": "Pattern found",
-                "confidence": "high",
-                "documentation_url": None,
-            },
-            examples={"good": [], "bad": []},
+            reporting=RuleReporting(
+                default_message="Pattern found",
+                confidence="high",
+                documentation_url=None,
+            ),
+            examples=RuleExamples(good=[], bad=[]),
             references=[],
         ),
     )
@@ -73,13 +82,13 @@ def test_parse_semgrep_output_pattern_discovery():
             category="test",
             severity="error",
             languages=["python"],
-            check=RuleCheck(type="forbidden", pattern="eval(...)"),
-            reporting={
-                "default_message": "Forbidden pattern",
-                "confidence": "high",
-                "documentation_url": None,
-            },
-            examples={"good": [], "bad": []},
+            check=ForbiddenCheck(type="forbidden", pattern="eval(...)"),
+            reporting=RuleReporting(
+                default_message="Forbidden pattern",
+                confidence="high",
+                documentation_url=None,
+            ),
+            examples=RuleExamples(good=[], bad=[]),
             references=[],
         ),
     )
@@ -95,16 +104,16 @@ def test_parse_semgrep_output_pattern_discovery():
             category="test",
             severity="info",
             languages=["python"],
-            check=RuleCheck(
+            check=PatternDiscoveryCheck(
                 type="pattern_discovery",
                 patterns=["class $MODEL(BaseModel):\n  ..."],
             ),
-            reporting={
-                "default_message": "Pattern found",
-                "confidence": "high",
-                "documentation_url": None,
-            },
-            examples={"good": [], "bad": []},
+            reporting=RuleReporting(
+                default_message="Pattern found",
+                confidence="high",
+                documentation_url=None,
+            ),
+            examples=RuleExamples(good=[], bad=[]),
             references=[],
         ),
     )

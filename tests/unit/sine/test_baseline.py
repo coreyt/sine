@@ -8,6 +8,7 @@ def test_filter_findings_removes_known() -> None:
     finding = Finding(
         guideline_id="ARCH-001",
         title="HTTP calls require resilience wrappers",
+        category="resilience",
         severity="error",
         file="src/app.py",
         line=10,

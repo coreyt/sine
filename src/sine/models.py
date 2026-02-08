@@ -1,25 +1,54 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class RuleCheck(BaseModel):
+class MustWrapCheck(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    type: Literal["must_wrap"]
+    target: list[str]
+    wrapper: list[str]
 
-    type: Literal["must_wrap", "forbidden", "required_with", "raw", "pattern_discovery"]
-    target: list[str] | None = None
-    wrapper: list[str] | None = None
-    pattern: str | None = None
-    if_present: str | None = None
-    must_have: str | None = None
-    scope: str | None = None
-    engine: str | None = None
-    config: str | None = None
-    # Pattern discovery fields
-    patterns: list[str] | None = None
+
+class ForbiddenCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    type: Literal["forbidden"]
+    pattern: str
+
+
+class RequiredWithCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    type: Literal["required_with"]
+    if_present: str
+    must_have: str
+
+
+class RawCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    type: Literal["raw"]
+    config: str
+    engine: str = "semgrep"
+
+
+class PatternDiscoveryCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    type: Literal["pattern_discovery"]
+    patterns: list[str]
+
+
+RuleCheck = Annotated[
+    Union[
+        MustWrapCheck,
+        ForbiddenCheck,
+        RequiredWithCheck,
+        RawCheck,
+        PatternDiscoveryCheck,
+    ],
+    Field(discriminator="type"),
+]
 
 
 class RuleReporting(BaseModel):
@@ -74,6 +103,7 @@ class Finding:
 
     guideline_id: str
     title: str
+    category: str
     severity: str
     file: str
     line: int

@@ -7,7 +7,17 @@ from typing import Any
 
 import yaml
 
-from sine.models import Finding, PatternInstance, RuleCheck, RuleSpecFile
+from sine.models import (
+    Finding,
+    ForbiddenCheck,
+    MustWrapCheck,
+    PatternDiscoveryCheck,
+    PatternInstance,
+    RawCheck,
+    RequiredWithCheck,
+    RuleCheck,
+    RuleSpecFile,
+)
 
 
 def compile_semgrep_config(specs: list[RuleSpecFile]) -> dict[str, Any]:
@@ -15,9 +25,7 @@ def compile_semgrep_config(specs: list[RuleSpecFile]) -> dict[str, Any]:
     for spec in specs:
         rule = spec.rule
         check = rule.check
-        if check.type == "raw":
-            if not check.config:
-                raise ValueError(f"Rule {rule.id} missing raw config")
+        if isinstance(check, RawCheck):
             raw_config = yaml.safe_load(check.config)
             rules.extend(raw_config.get("rules", []))
             continue
@@ -36,22 +44,18 @@ def compile_semgrep_config(specs: list[RuleSpecFile]) -> dict[str, Any]:
 
 
 def _compile_patterns(check: RuleCheck) -> list[dict[str, Any]]:
-    if check.type == "must_wrap":
+    if isinstance(check, MustWrapCheck):
         return _compile_must_wrap(check)
-    if check.type == "forbidden":
-        if not check.pattern:
-            raise ValueError("forbidden requires pattern")
+    if isinstance(check, ForbiddenCheck):
         return [{"pattern": check.pattern}]
-    if check.type == "required_with":
+    if isinstance(check, RequiredWithCheck):
         return _compile_required_with(check)
-    if check.type == "pattern_discovery":
+    if isinstance(check, PatternDiscoveryCheck):
         return _compile_pattern_discovery(check)
-    raise ValueError(f"Unsupported check type: {check.type}")
+    raise ValueError(f"Unsupported check type: {type(check)}")
 
 
-def _compile_must_wrap(check: RuleCheck) -> list[dict[str, Any]]:
-    if not check.target or not check.wrapper:
-        raise ValueError("must_wrap requires target and wrapper")
+def _compile_must_wrap(check: MustWrapCheck) -> list[dict[str, Any]]:
     patterns: list[dict[str, Any]] = [
         {"pattern-either": [{"pattern": target + "(...)"} for target in check.target]}
     ]
@@ -60,9 +64,7 @@ def _compile_must_wrap(check: RuleCheck) -> list[dict[str, Any]]:
     return patterns
 
 
-def _compile_required_with(check: RuleCheck) -> list[dict[str, Any]]:
-    if not check.if_present or not check.must_have:
-        raise ValueError("required_with requires if_present and must_have")
+def _compile_required_with(check: RequiredWithCheck) -> list[dict[str, Any]]:
     if_present = check.if_present
     must_have = check.must_have
 
@@ -82,14 +84,11 @@ def _compile_required_with(check: RuleCheck) -> list[dict[str, Any]]:
     return patterns
 
 
-def _compile_pattern_discovery(check: RuleCheck) -> list[dict[str, Any]]:
+def _compile_pattern_discovery(check: PatternDiscoveryCheck) -> list[dict[str, Any]]:
     """Compile pattern discovery check to Semgrep patterns.
 
     Pattern discovery finds instances of patterns (descriptive), not violations (prescriptive).
     """
-    if not check.patterns:
-        raise ValueError("pattern_discovery requires patterns field")
-
     # Use pattern-either to match any of the provided patterns
     return [{"pattern-either": [{"pattern": p} for p in check.patterns]}]
 
@@ -195,6 +194,7 @@ def parse_semgrep_output(
                 Finding(
                     guideline_id=guideline_id,
                     title=spec.rule.title,
+                    category=spec.rule.category,
                     severity=spec.rule.severity,
                     file=result.get("path", ""),
                     line=result.get("start", {}).get("line", 0),

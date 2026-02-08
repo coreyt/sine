@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 from sine.baseline import BASELINE_PATH, Baseline, filter_findings, load_baseline, write_baseline
 from sine.models import Finding, PatternInstance, RuleSpecFile
+from sine.sarif import format_findings_sarif
 from sine.semgrep import (
     build_semgrep_command,
     compile_semgrep_config,

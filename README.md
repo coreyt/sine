@@ -18,14 +18,11 @@ Sine combines:
 - Load rule specifications from YAML files
 - Compile specifications into Semgrep rules
 - Run pattern matching across your codebase
-- Maintain a baseline of known findings
-- Report on new violations
+- **Multiple Output Formats**: Text, JSON, and SARIF for CI/CD integration
 
-### Pattern Discovery
-- Research architecture patterns using web search and LLM extraction
-- Discover implementation patterns from trusted documentation
-- Validate patterns against credibility sources
-- Generate rule specifications automatically
+### Governance Workflow
+- **Pattern Discovery**: Use AI-powered agents to find patterns in your code
+- **Promotion**: Transpile validated patterns into enforcement rules (`sine promote`)
 
 ## Installation
 

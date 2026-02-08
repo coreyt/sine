@@ -12,9 +12,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+if TYPE_CHECKING:
+    from sine.models import RuleCheck
 
 # ============================================================================
 # Pattern Examples
@@ -113,6 +116,12 @@ class DiscoveredPattern(BaseModel):
     )
     confidence: Literal["high", "medium", "low"] = Field(
         ..., description="Agent's confidence in the pattern validity"
+    )
+
+    # Proposed enforcement
+    proposed_check: RuleCheck | None = Field(
+        default=None,
+        description="Proposed automated check (RuleCheck) for this pattern",
     )
 
     # Examples and references
