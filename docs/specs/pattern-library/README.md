@@ -24,7 +24,7 @@ Pattern discovery rules identify **where patterns are being used** (descriptive)
 Run pattern discovery on a codebase:
 
 ```bash
-semgrep --config=docs/second-shift/pattern-library/examples.yaml src/ --metrics=off
+semgrep --config=docs/specs/pattern-library/examples.yaml src/ --metrics=off
 ```
 
 ### Integration with Sine (Future)

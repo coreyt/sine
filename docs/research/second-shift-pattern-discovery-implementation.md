@@ -196,7 +196,7 @@ Created comprehensive tests in `tests/unit/second_shift/test_pattern_discovery.p
 ```bash
 # Discover patterns in specific directory
 ling second-shift \
-  --rules-dir docs/second-shift/rule-specs/examples \
+  --rules-dir docs/specs/rule-specs/examples \
   --target src/ling \
   --discovery-only
 ```
@@ -234,7 +234,7 @@ Total: 60 pattern instances discovered
 Run both enforcement and discovery:
 
 ```bash
-ling second-shift --rules-dir docs/second-shift/rule-specs/examples
+ling second-shift --rules-dir docs/specs/rule-specs/examples
 ```
 
 **Output:**
@@ -467,7 +467,7 @@ src/ling/second_shift/
 src/ling/
 └── cli.py                              # Added --discovery-only flag
 
-docs/second-shift/rule-specs/examples/
+docs/specs/rule-specs/examples/
 ├── PATTERN-DISC-001.yaml               # NEW - Pydantic pattern
 └── PATTERN-DISC-002.yaml               # NEW - Immutable dataclass pattern
 

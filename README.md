@@ -45,10 +45,11 @@ Sine is in active development. It was extracted from the [ling](https://github.c
 
 ## Documentation
 
-See the `docs/` directory for:
-- Design documentation
-- Pattern discovery methodology
-- Rule specifications and examples
+- **`docs/research/`** - Design docs, pattern discovery methodology, validation results
+- **`docs/specs/`** - Rule specifications, pattern library, and examples
+  - `docs/specs/rule-specs/examples/` - 23 ready-to-use rule specs (3 ARCH, 20 PATTERN-DISC)
+  - `docs/specs/pattern-library/` - Pattern examples and validation
+  - `docs/specs/semgrep/` - Raw Semgrep query examples
 
 ## License
 
