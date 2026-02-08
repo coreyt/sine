@@ -46,6 +46,7 @@ Sine is in active development. It was extracted from the [ling](https://github.c
 
 ## Documentation
 
+- **[Configuration](docs/configuration.md)** - How to configure Sine via `pyproject.toml` or `sine.toml`.
 - **`docs/research/`** - Design docs, pattern discovery methodology, validation results
 - **`docs/specs/`** - Rule specifications, pattern library, and examples
   - `docs/specs/rule-specs/examples/` - 23 ready-to-use rule specs (3 ARCH, 20 PATTERN-DISC)
