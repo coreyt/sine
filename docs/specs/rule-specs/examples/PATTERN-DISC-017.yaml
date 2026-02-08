@@ -26,6 +26,10 @@ rule:
         def $FUNC(...):
           ...
       - |
+        @lru_cache(...)
+        def $FUNC(...):
+          ...
+      - |
         def $FUNC(...):
           if $KEY not in $CACHE:
             $CACHE[$KEY] = $COMPUTE(...)

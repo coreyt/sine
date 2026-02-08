@@ -20,15 +20,9 @@ rule:
       - |
         def $FUNC(...) -> tuple[bool, ...]:
           ...
-          if $CONDITION:
-            return True, $VALUE
-          return False, $ERROR
       - |
         def $FUNC(...) -> $TYPE | None:
           ...
-          if $CONDITION:
-            return None
-          return $VALUE
 
   reporting:
     default_message: "Result type pattern detected. Function returns tuple or Optional for explicit success/failure handling."

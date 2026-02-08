@@ -19,7 +19,8 @@ rule:
     patterns:
       - |
         class $CLASS:
-          def __init__(self, $DEP):
+          def __init__(..., $DEP, ...):
+            ...
             self.$FIELD = $DEP
     metavariable_regex:
       - metavariable: "$FIELD"

@@ -21,6 +21,10 @@ rule:
         @$REGISTRY.register($KEY)
         class $CLASS:
           ...
+      - |
+        @$REGISTER($KEY)
+        class $CLASS:
+          ...
 
   reporting:
     default_message: "Factory Registration pattern detected. Decorator registers classes or functions in a registry."

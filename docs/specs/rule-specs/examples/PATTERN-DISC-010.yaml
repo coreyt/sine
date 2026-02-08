@@ -35,10 +35,11 @@ rule:
       - language: python
         code: |
           def build_guidelines(config_path: Path) -> str:
-              configs = parse_configs(config_path)
-              docs = fetch_documentation(configs)
-              rules = match_rules(configs, docs)
-              return render_markdown(rules)
+              data = parse_configs(config_path)
+              data = fetch_documentation(data)
+              data = match_rules(data)
+              data = render_markdown(data)
+              return data
     bad: []
 
   references:
