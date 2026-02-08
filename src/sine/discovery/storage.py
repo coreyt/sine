@@ -4,7 +4,7 @@ This module provides file-based storage for patterns at different stages:
 - raw: DiscoveredPattern (agent output)
 - validated: ValidatedPattern (post-quality-gate)
 - compiled: CompiledPattern (with Semgrep rules)
-- specs: Second Shift YAML specs (for Semgrep execution)
+- specs: Sine YAML specs (for Semgrep execution)
 
 Directory structure mirrors pattern categorization for easy navigation.
 """
@@ -181,7 +181,7 @@ class PatternStorage:
         return file_path
 
     def _get_spec_path(self, pattern_id: str, create_dirs: bool = False) -> Path:
-        """Get the file path for a Second Shift spec.
+        """Get the file path for a Sine spec.
 
         Args:
             pattern_id: Pattern identifier

@@ -1,4 +1,4 @@
-"""Pattern discovery module for ling.
+"""Pattern discovery module for Sine.
 
 This module provides infrastructure for discovering, validating, and compiling
 coding patterns into automated guidelines.
