@@ -1,0 +1,45 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-003"
+  title: "Singleton Pattern"
+  description: |
+    Discovers usage of the Singleton pattern where a class ensures only one instance exists.
+    Detects both __new__ based singletons and module-level function-based singletons.
+  rationale: |
+    Singleton pattern ensures a class has only one instance and provides a global point of access.
+    Useful for coordinating actions, managing shared resources, or configuration management.
+  tier: 1
+  category: "creational"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        class $CLASS:
+          ...
+          _instance = None
+          ...
+
+  reporting:
+    default_message: "Singleton pattern detected. Class uses module-level instance or __new__ to ensure single instance."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          class DatabaseConnection:
+              _instance = None
+
+              def __new__(cls):
+                  if cls._instance is None:
+                      cls._instance = super().__new__(cls)
+                  return cls._instance
+    bad: []
+
+  references:
+    - "https://refactoring.guru/design-patterns/singleton"

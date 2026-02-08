@@ -1,0 +1,43 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-002"
+  title: "Immutable Dataclass Pattern"
+  description: |
+    Discovers usage of frozen dataclasses for immutable data structures.
+    This pattern ensures data objects cannot be modified after creation.
+  rationale: |
+    Immutable data structures prevent accidental mutation and make code
+    more predictable, especially in concurrent or pipeline processing.
+  tier: 1
+  category: "data-immutability"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        @dataclass(frozen=True)
+        class $CLASS:
+          ...
+
+  reporting:
+    default_message: "Immutable dataclass pattern found"
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          from dataclasses import dataclass
+
+          @dataclass(frozen=True)
+          class RuleSummary:
+              name: str
+              severity: str
+    bad: []  # No bad examples for discovery
+
+  references:
+    - "https://docs.python.org/3/library/dataclasses.html"

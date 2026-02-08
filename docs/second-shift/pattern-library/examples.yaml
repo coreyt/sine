@@ -1,0 +1,461 @@
+# Example Pattern Discovery Rules for Testing on ling Codebase
+# These demonstrate how Semgrep can identify design patterns that may not
+# yet have explicit Sine specs
+
+rules:
+  # ==========================================================================
+  # CREATIONAL PATTERNS
+  # ==========================================================================
+
+  - id: pattern-discovery-singleton
+    message: |
+      Singleton pattern detected. Class uses module-level instance or
+      __new__ to ensure single instance.
+    severity: INFO
+    languages: [python]
+    pattern-either:
+      # Pattern 1: __new__ based singleton
+      - pattern: |
+          class $CLASS:
+            ...
+            _instance = None
+            ...
+            def __new__(...):
+              ...
+      # Pattern 2: Module-level function-based singleton
+      - pattern: |
+          def get_$NAME(...):
+            if not hasattr($MODULE, '_instance'):
+              $MODULE._instance = $CLASS(...)
+            return $MODULE._instance
+    metadata:
+      pattern_type: singleton
+      category: creational
+      confidence: HIGH
+      description: "Ensures a class has only one instance"
+
+  - id: pattern-discovery-factory-function
+    message: |
+      Factory pattern detected. Function creates and returns different
+      types based on conditions.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          def $FUNC(...):
+            ...
+            if $COND:
+              return $CLASS1(...)
+            ...
+            return $CLASS2(...)
+      - metavariable-pattern:
+          metavariable: $FUNC
+          pattern-regex: ^(create|make|build|get|new)_.*
+    metadata:
+      pattern_type: factory
+      category: creational
+      confidence: MEDIUM
+      description: "Encapsulates object creation logic"
+
+  - id: pattern-discovery-builder-pattern
+    message: |
+      Builder pattern detected. Class provides fluent interface for
+      constructing complex objects.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          class $BUILDER:
+            ...
+            def $METHOD(self, ...):
+              ...
+              return self
+            ...
+            def build(self):
+              return $RESULT
+      - metavariable-pattern:
+          metavariable: $BUILDER
+          pattern-regex: .*Builder$
+    metadata:
+      pattern_type: builder
+      category: creational
+      confidence: HIGH
+      description: "Constructs complex objects step by step"
+
+  # ==========================================================================
+  # STRUCTURAL PATTERNS
+  # ==========================================================================
+
+  - id: pattern-discovery-adapter-pattern
+    message: |
+      Adapter pattern detected. Class wraps another object to provide
+      a different interface.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          class $ADAPTER:
+            def __init__(self, $ADAPTEE: ...):
+              self._$FIELD = $ADAPTEE
+            ...
+            def $METHOD(self, ...):
+              ...
+              self._$FIELD.$OTHER_METHOD(...)
+              ...
+      - metavariable-pattern:
+          metavariable: $ADAPTER
+          pattern-regex: .*Adapter$
+    metadata:
+      pattern_type: adapter
+      category: structural
+      confidence: HIGH
+      description: "Converts interface of a class into another interface"
+
+  - id: pattern-discovery-registry-pattern
+    message: |
+      Registry pattern detected. Class maintains a collection of objects
+      indexed by key for lookup.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          class $REGISTRY:
+            ...
+            _$ITEMS: dict = {}
+            ...
+            def register(self, $KEY, $VALUE):
+              self._$ITEMS[$KEY] = $VALUE
+            ...
+            def get(self, $KEY):
+              return self._$ITEMS[$KEY]
+      - metavariable-pattern:
+          metavariable: $REGISTRY
+          pattern-regex: .*Registry$
+    metadata:
+      pattern_type: registry
+      category: structural
+      confidence: HIGH
+      description: "Centralized storage for instances indexed by key"
+      note: "ling uses this pattern in src/ling/adapters/base.py"
+
+  - id: pattern-discovery-dataclass-immutable
+    message: |
+      Immutable data structure pattern detected using frozen dataclass.
+      Useful for value objects and DTOs.
+    severity: INFO
+    languages: [python]
+    pattern: |
+      @dataclass(frozen=True)
+      class $CLASS:
+        ...
+    metadata:
+      pattern_type: immutable_data
+      category: structural
+      confidence: HIGH
+      description: "Immutable data structures using dataclass"
+      note: "ling uses this extensively for RuleDoc, EnrichedRule, etc."
+
+  # ==========================================================================
+  # BEHAVIORAL PATTERNS
+  # ==========================================================================
+
+  - id: pattern-discovery-template-method
+    message: |
+      Template Method pattern detected. Abstract class defines skeleton
+      with abstract steps for subclasses to implement.
+    severity: INFO
+    languages: [python]
+    pattern: |
+      class $BASE(ABC):
+        ...
+        def $TEMPLATE_METHOD(self, ...):
+          ...
+          self.$STEP1(...)
+          ...
+          self.$STEP2(...)
+          ...
+        @abstractmethod
+        def $STEP1(self, ...):
+          ...
+    metadata:
+      pattern_type: template_method
+      category: behavioral
+      confidence: HIGH
+      description: "Defines skeleton of algorithm with steps in subclasses"
+      note: "ling uses this in ToolAdapter base class"
+
+  - id: pattern-discovery-strategy-pattern
+    message: |
+      Strategy pattern detected. Context delegates to a strategy object
+      that encapsulates an algorithm.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          class $CONTEXT:
+            def __init__(self, ..., $STRATEGY: $TYPE, ...):
+              self._strategy = $STRATEGY
+            ...
+            def $METHOD(self, ...):
+              ...
+              self._strategy.$EXECUTE(...)
+              ...
+      - metavariable-pattern:
+          metavariable: $TYPE
+          pattern-regex: .*Strategy$|.*Policy$|.*Handler$
+    metadata:
+      pattern_type: strategy
+      category: behavioral
+      confidence: MEDIUM
+      description: "Encapsulates interchangeable algorithms"
+
+  # ==========================================================================
+  # ARCHITECTURAL PATTERNS
+  # ==========================================================================
+
+  - id: pattern-discovery-pipeline-pattern
+    message: |
+      Pipeline pattern detected. Data flows through a series of
+      processing stages.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          def $PIPELINE(...):
+            $RESULT = $STAGE1(...)
+            $RESULT = $STAGE2($RESULT, ...)
+            $RESULT = $STAGE3($RESULT, ...)
+            ...
+            return $RESULT
+      - metavariable-pattern:
+          metavariable: $PIPELINE
+          pattern-regex: .*pipeline$|.*process.*|.*transform.*
+    metadata:
+      pattern_type: pipeline
+      category: architectural
+      confidence: MEDIUM
+      description: "Sequential processing stages"
+      note: "ling's build process is a pipeline: parse -> fetch -> match -> render"
+
+  - id: pattern-discovery-dependency-injection
+    message: |
+      Dependency Injection pattern detected. Dependencies are passed
+      via constructor rather than created internally.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          class $CLASS:
+            def __init__(self, $DEP: $TYPE, ...):
+              self._$FIELD = $DEP
+      # Exclude simple data dependencies
+      - metavariable-pattern:
+          metavariable: $TYPE
+          pattern-not-regex: ^(str|int|float|bool|dict|list|Path)$
+    metadata:
+      pattern_type: dependency_injection
+      category: architectural
+      confidence: MEDIUM
+      description: "Dependencies injected via constructor"
+
+  - id: pattern-discovery-context-manager
+    message: |
+      Context Manager pattern detected. Class implements __enter__ and
+      __exit__ for resource management.
+    severity: INFO
+    languages: [python]
+    pattern: |
+      class $MANAGER:
+        ...
+        def __enter__(self):
+          ...
+        def __exit__(self, ...):
+          ...
+    metadata:
+      pattern_type: context_manager
+      category: architectural
+      confidence: HIGH
+      description: "Resource management with automatic cleanup"
+
+  # ==========================================================================
+  # FUNCTIONAL PATTERNS
+  # ==========================================================================
+
+  - id: pattern-discovery-decorator-function
+    message: |
+      Decorator pattern detected (function-based). Function wraps another
+      function to extend behavior.
+    severity: INFO
+    languages: [python]
+    pattern: |
+      def $DECORATOR($FUNC):
+        def $WRAPPER(...):
+          ...
+          $RESULT = $FUNC(...)
+          ...
+          return $RESULT
+        return $WRAPPER
+    metadata:
+      pattern_type: decorator_function
+      category: functional
+      confidence: HIGH
+      description: "Function decorator for cross-cutting concerns"
+
+  - id: pattern-discovery-factory-registration
+    message: |
+      Factory Registration pattern detected. Decorator registers
+      classes or functions in a registry.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          def register_$TYPE($NAME: str):
+            def decorator($CLASS):
+              $REGISTRY[$NAME] = $CLASS
+              return $CLASS
+            return decorator
+      - pattern: |
+          @$REGISTRY.register($KEY)
+          class $CLASS:
+            ...
+    metadata:
+      pattern_type: factory_registration
+      category: functional
+      confidence: HIGH
+      description: "Decorator-based factory registration"
+      note: "ling could use this pattern for dynamic adapter registration"
+
+  # ==========================================================================
+  # ERROR HANDLING PATTERNS
+  # ==========================================================================
+
+  - id: pattern-discovery-custom-exception-hierarchy
+    message: |
+      Custom exception hierarchy pattern detected. Base exception class
+      for domain-specific errors.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          class $BASE(Exception):
+            ...
+
+          class $DERIVED($BASE):
+            ...
+    metadata:
+      pattern_type: exception_hierarchy
+      category: error_handling
+      confidence: HIGH
+      description: "Custom exception hierarchy for domain errors"
+      note: "ling defines LingError as base for all custom exceptions"
+
+  - id: pattern-discovery-result-type-pattern
+    message: |
+      Result type pattern detected. Function returns tuple of (success, value)
+      or uses Optional for explicit failure handling.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          def $FUNC(...) -> tuple[bool, ...]:
+            ...
+            if $CONDITION:
+              return True, $VALUE
+            return False, $ERROR
+      - pattern: |
+          def $FUNC(...) -> $TYPE | None:
+            ...
+            if $CONDITION:
+              return None
+            return $VALUE
+    metadata:
+      pattern_type: result_type
+      category: error_handling
+      confidence: MEDIUM
+      description: "Explicit success/failure without exceptions"
+
+  # ==========================================================================
+  # CACHING PATTERNS
+  # ==========================================================================
+
+  - id: pattern-discovery-memoization
+    message: |
+      Memoization pattern detected. Function caches results based on
+      input arguments.
+    severity: INFO
+    languages: [python]
+    pattern-either:
+      - pattern: |
+          @cache
+          def $FUNC(...):
+            ...
+      - pattern: |
+          @lru_cache
+          def $FUNC(...):
+            ...
+      - pattern: |
+          def $FUNC(...):
+            if $KEY not in $CACHE:
+              $CACHE[$KEY] = $COMPUTE(...)
+            return $CACHE[$KEY]
+    metadata:
+      pattern_type: memoization
+      category: caching
+      confidence: HIGH
+      description: "Caches function results for performance"
+
+  # ==========================================================================
+  # TYPE PATTERNS
+  # ==========================================================================
+
+  - id: pattern-discovery-type-guard
+    message: |
+      Type Guard pattern detected. Function narrows type using TypeGuard
+      for type safety.
+    severity: INFO
+    languages: [python]
+    pattern: |
+      def is_$TYPE($OBJ: ...) -> TypeGuard[$TYPE]:
+        return isinstance($OBJ, $TYPE)
+    metadata:
+      pattern_type: type_guard
+      category: typing
+      confidence: HIGH
+      description: "Runtime type checking with static type narrowing"
+
+  - id: pattern-discovery-protocol-structural
+    message: |
+      Protocol pattern detected (structural typing). Defines interface
+      without inheritance.
+    severity: INFO
+    languages: [python]
+    pattern: |
+      class $PROTO(Protocol):
+        ...
+        def $METHOD(self, ...):
+          ...
+    metadata:
+      pattern_type: protocol
+      category: typing
+      confidence: HIGH
+      description: "Structural typing interface"
+
+  # ==========================================================================
+  # VALIDATION PATTERNS
+  # ==========================================================================
+
+  - id: pattern-discovery-pydantic-model
+    message: |
+      Data validation pattern detected using Pydantic models.
+      Provides runtime validation and serialization.
+    severity: INFO
+    languages: [python]
+    pattern: |
+      class $MODEL(BaseModel):
+        ...
+    metadata:
+      pattern_type: pydantic_validation
+      category: validation
+      confidence: HIGH
+      description: "Runtime data validation with Pydantic"
+      note: "ling uses Pydantic extensively for config validation"

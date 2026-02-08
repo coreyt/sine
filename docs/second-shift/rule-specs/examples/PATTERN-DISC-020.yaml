@@ -1,0 +1,40 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-020"
+  title: "Type Alias Pattern"
+  description: |
+    Discovers usage of type aliases for creating semantic type names that improve
+    code readability and maintainability.
+  rationale: |
+    Type aliases provide semantic names for complex types, making code more self-documenting
+    and easier to refactor. Commonly used for union types, generic types, and domain concepts.
+  tier: 1
+  category: "typing"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        $NAME: TypeAlias = ...
+
+  reporting:
+    default_message: "Type Alias pattern detected. Creates semantic type names for better readability."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          from typing import TypeAlias
+
+          RuleName: TypeAlias = str
+          ConfigDict: TypeAlias = dict[str, Any]
+          PathLike: TypeAlias = str | Path
+    bad: []
+
+  references:
+    - "https://peps.python.org/pep-0613/"

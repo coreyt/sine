@@ -1,0 +1,56 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-008"
+  title: "Template Method Pattern"
+  description: |
+    Discovers usage of the Template Method pattern where an abstract class defines
+    the skeleton of an algorithm with abstract steps for subclasses to implement.
+  rationale: |
+    Template Method pattern defines the skeleton of an algorithm in a base class,
+    deferring some steps to subclasses. Allows subclasses to redefine certain steps
+    without changing the algorithm's structure.
+  tier: 1
+  category: "behavioral"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        class $BASE(ABC):
+          ...
+          def $TEMPLATE_METHOD(self, ...):
+            ...
+            self.$STEP1(...)
+            ...
+            self.$STEP2(...)
+            ...
+          @abstractmethod
+          def $STEP1(self, ...):
+            ...
+
+  reporting:
+    default_message: "Template Method pattern detected. Abstract class defines skeleton with abstract steps for subclasses."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          from abc import ABC, abstractmethod
+
+          class ToolAdapter(ABC):
+              def process(self, config_path: Path) -> list[RuleConfig]:
+                  raw_config = self.parse_config(config_path)
+                  return self.transform_rules(raw_config)
+
+              @abstractmethod
+              def parse_config(self, path: Path):
+                  pass
+    bad: []
+
+  references:
+    - "https://refactoring.guru/design-patterns/template-method"

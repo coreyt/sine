@@ -1,0 +1,53 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-016"
+  title: "Result Type Pattern"
+  description: |
+    Discovers usage of the Result Type pattern where functions return tuples of (success, value)
+    or use Optional types for explicit failure handling without exceptions.
+  rationale: |
+    Result Type pattern makes success/failure explicit in the type system, promoting
+    explicit error handling without relying on exceptions for control flow.
+  tier: 1
+  category: "error-handling"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        def $FUNC(...) -> tuple[bool, ...]:
+          ...
+          if $CONDITION:
+            return True, $VALUE
+          return False, $ERROR
+      - |
+        def $FUNC(...) -> $TYPE | None:
+          ...
+          if $CONDITION:
+            return None
+          return $VALUE
+
+  reporting:
+    default_message: "Result type pattern detected. Function returns tuple or Optional for explicit success/failure handling."
+    confidence: "medium"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          def parse_config(path: Path) -> tuple[bool, Config | str]:
+              if not path.exists():
+                  return False, "Config file not found"
+              try:
+                  config = load_yaml(path)
+                  return True, config
+              except Exception as e:
+                  return False, str(e)
+    bad: []
+
+  references:
+    - "https://fsharpforfunandprofit.com/posts/recipe-part2/"

@@ -1,0 +1,45 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-018"
+  title: "Type Guard Pattern"
+  description: |
+    Discovers usage of the Type Guard pattern where functions use TypeGuard return
+    annotation to narrow types for static type checkers.
+  rationale: |
+    Type Guard pattern enables runtime type checking while providing static type narrowing,
+    improving type safety and IDE support.
+  tier: 1
+  category: "typing"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        def is_$NAME($VAR):
+          return isinstance($VAR, ...)
+
+  reporting:
+    default_message: "Type Guard pattern detected. Function narrows type using TypeGuard for type safety."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          from typing import TypeGuard
+
+          def is_string(obj: object) -> TypeGuard[str]:
+              return isinstance(obj, str)
+
+          def process(value: str | int):
+              if is_string(value):
+                  # Type checker knows value is str here
+                  print(value.upper())
+    bad: []
+
+  references:
+    - "https://peps.python.org/pep-0647/"

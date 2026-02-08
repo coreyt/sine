@@ -1,0 +1,21 @@
+rules:
+  - id: arch-002-impl
+    languages: [python]
+    severity: WARNING
+    message: "Service endpoint missing health check (ARCH-002)"
+    patterns:
+      - pattern: |
+          @service
+          def $FUNC(...):
+            ...
+      - pattern-not-inside: |
+          @health_check
+          @service
+          def $FUNC(...):
+            ...
+      - pattern-not-inside: |
+          @service
+          @health_check
+          def $FUNC(...):
+            ...
+

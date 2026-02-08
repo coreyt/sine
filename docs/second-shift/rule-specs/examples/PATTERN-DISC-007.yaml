@@ -1,0 +1,49 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-007"
+  title: "Registry Pattern"
+  description: |
+    Discovers usage of the Registry pattern where a class maintains a collection of objects
+    indexed by key for centralized lookup, with register() and get() methods.
+  rationale: |
+    Registry pattern provides centralized storage for instances indexed by key, enabling
+    dynamic registration and retrieval of objects. Common in plugin systems and factories.
+  tier: 1
+  category: "structural"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        class $REGISTRY:
+          ...
+          def register(self, $KEY, $VALUE):
+            ...
+          ...
+          def get(self, $KEY):
+            ...
+
+  reporting:
+    default_message: "Registry pattern detected. Class maintains a collection of objects indexed by key for lookup."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          class AdapterRegistry:
+              _adapters: dict = {}
+
+              def register(self, name: str, adapter: ToolAdapter):
+                  self._adapters[name] = adapter
+
+              def get(self, name: str) -> ToolAdapter:
+                  return self._adapters[name]
+    bad: []
+
+  references:
+    - "https://martinfowler.com/eaaCatalog/registry.html"

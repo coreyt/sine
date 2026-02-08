@@ -1,0 +1,53 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-017"
+  title: "Memoization Pattern"
+  description: |
+    Discovers usage of the Memoization pattern where function results are cached
+    based on input arguments, either using @cache/@lru_cache decorators or manual caching.
+  rationale: |
+    Memoization improves performance by caching expensive function results and returning
+    cached values for repeated calls with the same arguments.
+  tier: 1
+  category: "caching"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        @cache
+        def $FUNC(...):
+          ...
+      - |
+        @lru_cache
+        def $FUNC(...):
+          ...
+      - |
+        def $FUNC(...):
+          if $KEY not in $CACHE:
+            $CACHE[$KEY] = $COMPUTE(...)
+          return $CACHE[$KEY]
+
+  reporting:
+    default_message: "Memoization pattern detected. Function caches results based on input arguments."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          from functools import lru_cache
+
+          @lru_cache(maxsize=128)
+          def fibonacci(n: int) -> int:
+              if n < 2:
+                  return n
+              return fibonacci(n - 1) + fibonacci(n - 2)
+    bad: []
+
+  references:
+    - "https://docs.python.org/3/library/functools.html#functools.lru_cache"

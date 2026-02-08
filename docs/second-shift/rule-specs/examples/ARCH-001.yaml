@@ -1,0 +1,45 @@
+schema_version: 1
+
+rule:
+  id: "ARCH-001"
+  title: "HTTP calls require resilience wrappers"
+  description: |
+    All outbound HTTP calls must be wrapped in a resilience construct (circuit breaker,
+    retry policy, or approved decorator).
+  rationale: |
+    Prevents cascading failures and ensures consistent retry/backoff behavior.
+  tier: 1
+  category: "resilience"
+  severity: "error"
+  languages: [python]
+
+  check:
+    type: "must_wrap"
+    target:
+      - "requests.get"
+      - "requests.post"
+      - "httpx.*"
+    wrapper:
+      - "circuit_breaker"
+      - "with_retry"
+      - "@resilient"
+
+  reporting:
+    default_message: "HTTP call outside resilience wrapper (ARCH-001)"
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          with circuit_breaker():
+              requests.get(url)
+    bad:
+      - language: python
+        code: |
+          requests.get(url)
+
+  references:
+    - "https://example.com/architecture/http-resilience"
+

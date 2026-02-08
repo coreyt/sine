@@ -1,0 +1,44 @@
+schema_version: 1
+
+rule:
+  id: "ARCH-002"
+  title: "Service endpoints must include health checks"
+  description: |
+    Any handler marked as a service endpoint must also expose a health check decorator
+    so monitoring systems can verify readiness.
+  rationale: |
+    Ensures operational visibility for services that can receive production traffic.
+  tier: 2
+  category: "operations"
+  severity: "warning"
+  languages: [python]
+
+  check:
+    type: "required_with"
+    if_present: "@service"
+    must_have: "@health_check"
+    scope: "function"
+
+  reporting:
+    default_message: "Service endpoint missing health check (ARCH-002)"
+    confidence: "medium"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          @service
+          @health_check
+          def handler():
+              return "ok"
+    bad:
+      - language: python
+        code: |
+          @service
+          def handler():
+              return "ok"
+
+  references:
+    - "https://example.com/architecture/service-health"
+

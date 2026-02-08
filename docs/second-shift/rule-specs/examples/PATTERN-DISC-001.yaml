@@ -1,0 +1,41 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-001"
+  title: "Pydantic BaseModel Pattern"
+  description: |
+    Discovers usage of Pydantic BaseModel for data validation.
+    This pattern provides runtime validation and serialization for data models.
+  rationale: |
+    Pydantic models ensure type safety and data validation at runtime.
+    Discovering this pattern helps document architectural decisions.
+  tier: 1
+  category: "data-validation"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        class $MODEL(BaseModel):
+          ...
+
+  reporting:
+    default_message: "Pydantic BaseModel pattern found"
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          from pydantic import BaseModel
+
+          class UserConfig(BaseModel):
+              name: str
+              age: int
+    bad: []  # No bad examples for discovery
+
+  references:
+    - "https://docs.pydantic.dev/"

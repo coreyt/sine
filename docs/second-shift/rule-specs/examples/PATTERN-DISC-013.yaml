@@ -1,0 +1,49 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-013"
+  title: "Decorator Function Pattern"
+  description: |
+    Discovers usage of the Decorator pattern (function-based) where a function wraps
+    another function to extend its behavior, commonly used for cross-cutting concerns.
+  rationale: |
+    Decorator pattern allows behavior to be added to individual objects dynamically
+    without affecting other objects. Useful for logging, timing, authentication, etc.
+  tier: 1
+  category: "functional"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        def $DECORATOR($FUNC):
+          def $WRAPPER(...):
+            ...
+            $RESULT = $FUNC(...)
+            ...
+            return $RESULT
+          return $WRAPPER
+
+  reporting:
+    default_message: "Decorator pattern detected (function-based). Function wraps another function to extend behavior."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          def timing_decorator(func):
+              def wrapper(*args, **kwargs):
+                  start = time.time()
+                  result = func(*args, **kwargs)
+                  elapsed = time.time() - start
+                  print(f"{func.__name__} took {elapsed}s")
+                  return result
+              return wrapper
+    bad: []
+
+  references:
+    - "https://realpython.com/primer-on-python-decorators/"

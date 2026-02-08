@@ -1,0 +1,44 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-004"
+  title: "Factory Function Pattern"
+  description: |
+    Discovers usage of factory functions that create and return different types based on conditions.
+    Identifies functions with names starting with create/make/build/get/new that return different classes.
+  rationale: |
+    Factory pattern encapsulates object creation logic, allowing flexibility in what gets created
+    without exposing instantiation details to callers.
+  tier: 1
+  category: "creational"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        def create_$NAME(...):
+          if $COND:
+            return $CLASS1(...)
+          return $CLASS2(...)
+
+  reporting:
+    default_message: "Factory pattern detected. Function creates and returns different types based on conditions."
+    confidence: "medium"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          def create_adapter(tool_name: str) -> ToolAdapter:
+              if tool_name == "eslint":
+                  return ESLintAdapter()
+              elif tool_name == "ruff":
+                  return RuffAdapter()
+              return DefaultAdapter()
+    bad: []
+
+  references:
+    - "https://refactoring.guru/design-patterns/factory-method"

@@ -1,0 +1,48 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-009"
+  title: "Strategy Pattern"
+  description: |
+    Discovers usage of the Strategy pattern where a context delegates to a strategy object
+    that encapsulates an algorithm. Detects classes that accept Strategy/Policy/Handler types.
+  rationale: |
+    Strategy pattern encapsulates interchangeable algorithms, allowing the algorithm to vary
+    independently from clients that use it. Promotes open/closed principle.
+  tier: 1
+  category: "behavioral"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        class $CONTEXT:
+          def __init__(self, ..., $STRATEGY: $TYPE, ...):
+            self._strategy = $STRATEGY
+          ...
+          def $METHOD(self, ...):
+            ...
+            self._strategy.$EXECUTE(...)
+            ...
+
+  reporting:
+    default_message: "Strategy pattern detected. Context delegates to a strategy object that encapsulates an algorithm."
+    confidence: "medium"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          class DocumentRenderer:
+              def __init__(self, formatter: FormatterStrategy):
+                  self._strategy = formatter
+
+              def render(self, content: str) -> str:
+                  return self._strategy.format(content)
+    bad: []
+
+  references:
+    - "https://refactoring.guru/design-patterns/strategy"

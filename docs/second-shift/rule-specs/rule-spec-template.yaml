@@ -1,0 +1,64 @@
+# Sine Rule Spec Template (Agent-Friendly)
+# Purpose: define a single guideline in a format compatible with ling's future second-shift interface
+# and capable of producing lint-findings-style output (file, line, message, snippet).
+
+schema_version: 1
+
+rule:
+  id: "ARCH-XXX"
+  title: "Short, imperative title"
+  description: |
+    Explain the architectural intent. Focus on why the rule exists and what it protects.
+  rationale: |
+    Provide the engineering reason (reliability, security, performance, etc.).
+  tier: 1              # 1=required, 2=recommended, 3=contextual
+  category: "resilience"  # e.g., resilience, layering, security, performance
+  severity: "error"    # error | warning | info
+  languages: [python]  # Semgrep-supported languages
+
+  # Detection contract (high-level DSL)
+  check:
+    type: "must_wrap"   # must_wrap | forbidden | required_with | raw
+
+    # must_wrap
+    target:
+      - "requests.get"
+    wrapper:
+      - "circuit_breaker"
+
+    # forbidden (alternate)
+    # pattern: "eval($X)"
+
+    # required_with (alternate)
+    # if_present: "@Service"
+    # must_have: "@HealthCheck"
+    # scope: "class"
+
+    # raw (alternate)
+    # engine: "semgrep"
+    # config: |
+    #   rules:
+    #     - id: arch-xxx-impl
+    #       patterns: ...
+
+  # Output / reporting hints
+  reporting:
+    default_message: "Violation of ARCH-XXX"
+    confidence: "medium"   # low | medium | high
+    documentation_url: null
+
+  # Examples used in documentation and tests
+  examples:
+    good:
+      - language: python
+        code: |
+          with circuit_breaker():
+              requests.get(url)
+    bad:
+      - language: python
+        code: |
+          requests.get(url)
+
+  references:
+    - "https://example.com/architecture-guideline"
+

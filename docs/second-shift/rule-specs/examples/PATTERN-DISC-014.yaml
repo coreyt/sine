@@ -1,0 +1,48 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-014"
+  title: "Factory Registration Pattern"
+  description: |
+    Discovers usage of the Factory Registration pattern where decorators register
+    classes or functions in a registry for dynamic lookup and instantiation.
+  rationale: |
+    Factory Registration combines decorator and registry patterns to enable automatic
+    registration of implementations, commonly used in plugin systems.
+  tier: 1
+  category: "functional"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        @$REGISTRY.register($KEY)
+        class $CLASS:
+          ...
+
+  reporting:
+    default_message: "Factory Registration pattern detected. Decorator registers classes or functions in a registry."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          ADAPTERS = {}
+
+          def register_adapter(name: str):
+              def decorator(cls):
+                  ADAPTERS[name] = cls
+                  return cls
+              return decorator
+
+          @register_adapter("eslint")
+          class ESLintAdapter:
+              pass
+    bad: []
+
+  references:
+    - "https://realpython.com/primer-on-python-decorators/#registering-plugins"

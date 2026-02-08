@@ -1,0 +1,21 @@
+rules:
+  - id: arch-001-impl
+    languages: [python]
+    severity: ERROR
+    message: "HTTP call outside resilience wrapper (ARCH-001)"
+    patterns:
+      - pattern-either:
+          - pattern: requests.get(...)
+          - pattern: requests.post(...)
+          - pattern: httpx.$METHOD(...)
+      - pattern-not-inside: |
+          with circuit_breaker(...):
+            ...
+      - pattern-not-inside: |
+          with with_retry(...):
+            ...
+      - pattern-not-inside: |
+          @resilient
+          def $FUNC(...):
+            ...
+

@@ -1,0 +1,45 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-010"
+  title: "Pipeline Pattern"
+  description: |
+    Discovers usage of the Pipeline pattern where data flows through a series of
+    processing stages, with each stage transforming the result from the previous stage.
+  rationale: |
+    Pipeline pattern organizes sequential processing stages where output from one stage
+    becomes input to the next. Promotes separation of concerns and composability.
+  tier: 1
+  category: "architectural"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        def $PIPELINE(...):
+          $RESULT = $STAGE1(...)
+          $RESULT = $STAGE2($RESULT, ...)
+          $RESULT = $STAGE3($RESULT, ...)
+          ...
+          return $RESULT
+
+  reporting:
+    default_message: "Pipeline pattern detected. Data flows through a series of processing stages."
+    confidence: "medium"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          def build_guidelines(config_path: Path) -> str:
+              configs = parse_configs(config_path)
+              docs = fetch_documentation(configs)
+              rules = match_rules(configs, docs)
+              return render_markdown(rules)
+    bad: []
+
+  references:
+    - "https://martinfowler.com/articles/collection-pipeline/"

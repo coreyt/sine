@@ -1,0 +1,48 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-019"
+  title: "Protocol Pattern (Structural Typing)"
+  description: |
+    Discovers usage of the Protocol pattern for structural typing, defining interfaces
+    without inheritance. Enables duck typing with static type checking.
+  rationale: |
+    Protocol pattern provides structural subtyping (duck typing) with static verification,
+    allowing flexible interfaces without requiring inheritance.
+  tier: 1
+  category: "typing"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        class $PROTO(Protocol):
+          ...
+          def $METHOD(self, ...):
+            ...
+
+  reporting:
+    default_message: "Protocol pattern detected (structural typing). Defines interface without inheritance."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          from typing import Protocol
+
+          class Renderable(Protocol):
+              def render(self) -> str:
+                  ...
+
+          # Any class with render() method satisfies Renderable
+          class MarkdownRenderer:
+              def render(self) -> str:
+                  return "# Markdown"
+    bad: []
+
+  references:
+    - "https://peps.python.org/pep-0544/"

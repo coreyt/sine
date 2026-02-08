@@ -1,0 +1,44 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-006"
+  title: "Adapter Pattern"
+  description: |
+    Discovers usage of the Adapter pattern where a class wraps another object to provide
+    a different interface, typically with class names ending in "Adapter".
+  rationale: |
+    Adapter pattern converts the interface of a class into another interface clients expect,
+    allowing incompatible interfaces to work together.
+  tier: 1
+  category: "structural"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        class $ADAPTER:
+          def __init__(self, $ADAPTEE):
+            self._$FIELD = $ADAPTEE
+
+  reporting:
+    default_message: "Adapter pattern detected. Class wraps another object to provide a different interface."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          class ESLintAdapter:
+              def __init__(self, config_parser: ConfigParser):
+                  self._parser = config_parser
+
+              def parse_config(self, path: Path) -> list[RuleConfig]:
+                  raw_config = self._parser.load(path)
+                  return self._convert_to_rules(raw_config)
+    bad: []
+
+  references:
+    - "https://refactoring.guru/design-patterns/adapter"
