@@ -16,8 +16,19 @@ from sine.models import (
     RawCheck,
     RequiredWithCheck,
     RuleCheck,
+    RuleError,
     RuleSpecFile,
 )
+
+
+def str_presenter(dumper, data):
+    if "\n" in data:
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data)
+
+
+yaml.add_representer(str, str_presenter)
+yaml.add_representer(str, str_presenter, Dumper=yaml.SafeDumper)
 
 
 def compile_semgrep_config(specs: list[RuleSpecFile]) -> dict[str, Any]:
@@ -150,20 +161,35 @@ def render_dry_run(config: dict[str, Any], config_path: Path, targets: list[Path
 
 def parse_semgrep_output(
     output: str, spec_index: dict[str, RuleSpecFile]
-) -> tuple[list[Finding], list[PatternInstance]]:
-    """Parse Semgrep output into findings (violations) and pattern instances (discoveries).
+) -> tuple[list[Finding], list[PatternInstance], list[RuleError]]:
+    """Parse Semgrep output into findings (violations), pattern instances, and errors.
 
     Args:
         output: JSON output from Semgrep
         spec_index: Map of guideline IDs to rule specs
 
     Returns:
-        Tuple of (findings, pattern_instances)
+        Tuple of (findings, pattern_instances, errors)
     """
     data = json.loads(output)
     results = data.get("results", [])
+    errors_data = data.get("errors", [])
     findings: list[Finding] = []
     pattern_instances: list[PatternInstance] = []
+    errors: list[RuleError] = []
+
+    for error in errors_data:
+        # We generally care about rule parse errors or execution errors
+        # that are tied to specific rules.
+        rule_id = _extract_guideline_id(error.get("rule_id", ""))
+        errors.append(
+            RuleError(
+                rule_id=rule_id,
+                message=error.get("message", "Unknown error"),
+                level=error.get("level", "error"),
+                type=error.get("type", "SemgrepError"),
+            )
+        )
 
     for result in results:
         check_id = result.get("check_id", "")
@@ -205,7 +231,7 @@ def parse_semgrep_output(
                 )
             )
 
-    return findings, pattern_instances
+    return findings, pattern_instances, errors
 
 
 def _extract_guideline_id(check_id: str) -> str:

@@ -125,3 +125,12 @@ class PatternInstance:
     snippet: str
     confidence: str
 
+
+@dataclass(frozen=True)
+class RuleError:
+    """Represents an error executing a rule (e.g. parse error)."""
+
+    rule_id: str
+    message: str
+    level: str
+    type: str

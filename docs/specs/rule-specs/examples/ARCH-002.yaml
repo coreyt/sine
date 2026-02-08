@@ -17,7 +17,6 @@ rule:
     type: "required_with"
     if_present: "@service"
     must_have: "@health_check"
-    scope: "function"
 
   reporting:
     default_message: "Service endpoint missing health check (ARCH-002)"

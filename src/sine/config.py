@@ -31,6 +31,7 @@ class SineConfig(BaseModel):
     
     # Output settings
     format: str = Field(default="text")
+    fail_on_rule_error: bool = Field(default=False)
     
     # Discovery settings
     patterns_dir: Path = Field(default=Path(".sine-patterns"))

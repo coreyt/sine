@@ -55,7 +55,7 @@ def _finding(message: str = "eval forbidden (ARCH-010)") -> Finding:
 
 
 def test_run_sine_dry_run_returns_preview() -> None:
-    findings, new_findings, instances, dry_output = run_sine(
+    findings, new_findings, instances, errors, dry_output = run_sine(
         specs=[_spec()],
         targets=[Path("src")],
         dry_run=True,
@@ -64,6 +64,7 @@ def test_run_sine_dry_run_returns_preview() -> None:
     assert findings == []
     assert new_findings == []
     assert instances == []
+    assert errors == []
     assert dry_output is not None
     assert "Would execute:" in dry_output
 
@@ -74,7 +75,7 @@ def test_run_sine_update_baseline_writes_current_findings(monkeypatch) -> None:
     captured = {}
 
     monkeypatch.setattr("sine.runner.subprocess.run", lambda *args, **kwargs: fake_result)
-    monkeypatch.setattr("sine.runner.parse_semgrep_output", lambda *args, **kwargs: (findings, []))
+    monkeypatch.setattr("sine.runner.parse_semgrep_output", lambda *args, **kwargs: (findings, [], []))
     monkeypatch.setattr("sine.runner.load_baseline", lambda *args, **kwargs: None)
 
     def _capture_write(baseline: Baseline, path: Path) -> None:
@@ -83,7 +84,7 @@ def test_run_sine_update_baseline_writes_current_findings(monkeypatch) -> None:
 
     monkeypatch.setattr("sine.runner.write_baseline", _capture_write)
 
-    all_findings, new_findings, instances, dry_output = run_sine(
+    all_findings, new_findings, instances, errors, dry_output = run_sine(
         specs=[_spec()],
         targets=[Path("src")],
         update_baseline=True,
@@ -92,6 +93,7 @@ def test_run_sine_update_baseline_writes_current_findings(monkeypatch) -> None:
     assert all_findings == findings
     assert new_findings == []
     assert instances == []
+    assert errors == []
     assert dry_output is None
     assert "baseline" in captured
     assert captured["baseline"] == Baseline.from_findings(findings)
@@ -104,10 +106,10 @@ def test_run_sine_filters_existing_baseline(monkeypatch) -> None:
     baseline = Baseline.from_findings([known])
 
     monkeypatch.setattr("sine.runner.subprocess.run", lambda *args, **kwargs: fake_result)
-    monkeypatch.setattr("sine.runner.parse_semgrep_output", lambda *args, **kwargs: ([known, fresh], []))
+    monkeypatch.setattr("sine.runner.parse_semgrep_output", lambda *args, **kwargs: ([known, fresh], [], []))
     monkeypatch.setattr("sine.runner.load_baseline", lambda *args, **kwargs: baseline)
 
-    all_findings, new_findings, instances, dry_output = run_sine(
+    all_findings, new_findings, instances, errors, dry_output = run_sine(
         specs=[_spec()],
         targets=[Path("src")],
     )
@@ -115,4 +117,5 @@ def test_run_sine_filters_existing_baseline(monkeypatch) -> None:
     assert all_findings == [known, fresh]
     assert new_findings == [fresh]
     assert instances == []
+    assert errors == []
     assert dry_output is None

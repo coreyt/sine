@@ -7,7 +7,7 @@ from pathlib import Path
 
 import yaml
 from sine.baseline import BASELINE_PATH, Baseline, filter_findings, load_baseline, write_baseline
-from sine.models import Finding, PatternInstance, RuleSpecFile
+from sine.models import Finding, PatternInstance, RuleError, RuleSpecFile
 from sine.sarif import format_findings_sarif
 from sine.semgrep import (
     build_semgrep_command,
@@ -36,7 +36,7 @@ def run_sine(
     dry_run: bool = False,
     update_baseline: bool = False,
     discovery_only: bool = False,
-) -> tuple[list[Finding], list[Finding], list[PatternInstance], str | None]:
+) -> tuple[list[Finding], list[Finding], list[PatternInstance], list[RuleError], str | None]:
     """Run Sine checks (enforcement and/or discovery).
 
     Args:
@@ -47,7 +47,7 @@ def run_sine(
         discovery_only: If True, only run pattern discovery rules
 
     Returns:
-        Tuple of (all_findings, new_findings, pattern_instances, dry_run_output)
+        Tuple of (all_findings, new_findings, pattern_instances, errors, dry_run_output)
     """
     # Filter specs based on mode
     if discovery_only:
@@ -58,24 +58,30 @@ def run_sine(
         config_path = Path(temp_dir) / "semgrep.yaml"
         if dry_run:
             dry_output = render_dry_run(config, config_path, targets)
-            return [], [], [], dry_output
+            return [], [], [], [], dry_output
 
         config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
         command = build_semgrep_command(config_path, targets)
         result = subprocess.run(command, capture_output=True, text=True, check=False)
-        if result.returncode not in (0, 1):
-            raise RuntimeError(result.stderr.strip() or "Semgrep execution failed")
+        # Semgrep returns:
+        # 0: Success, no issues found (unless --error is set)
+        # 1: Issues found (if --error is set or implied)
+        # 2: Semgrep failed (e.g. parse error in rules) - but may still have results
+        if result.returncode not in (0, 1, 2):
+            raise RuntimeError(
+                f"Semgrep execution failed with code {result.returncode}:\n{result.stderr.strip()}"
+            )
 
         spec_index = {spec.rule.id: spec for spec in specs}
-        findings, pattern_instances = parse_semgrep_output(result.stdout, spec_index)
+        findings, pattern_instances, errors = parse_semgrep_output(result.stdout, spec_index)
         baseline = load_baseline(BASELINE_PATH)
         new_findings = filter_findings(findings, baseline)
 
         if update_baseline:
             write_baseline(Baseline.from_findings(findings), BASELINE_PATH)
-            return findings, [], pattern_instances, None
+            return findings, [], pattern_instances, errors, None
 
-        return findings, new_findings, pattern_instances, None
+        return findings, new_findings, pattern_instances, errors, None
 
 
 def format_findings_text(findings: list[Finding]) -> str:

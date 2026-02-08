@@ -41,10 +41,12 @@ def cli(ctx):
             "rules_dir": config.rules_dir,
             "target": config.target,
             "format": config.format,
+            "fail_on_rule_error": config.fail_on_rule_error,
         },
         "discover": {
             "rules_dir": config.rules_dir,
             "target": config.target,
+            "fail_on_rule_error": config.fail_on_rule_error,
         },
         "promote": {
             "patterns_dir": config.patterns_dir,
@@ -80,12 +82,18 @@ def cli(ctx):
     multiple=True,
     help="Paths to analyze (defaults to current directory)",
 )
+@click.option(
+    "--fail-on-rule-error",
+    is_flag=True,
+    help="Exit with error if any rules fail to execute",
+)
 def check(
     rules_dir: Path | None,
     update_baseline: bool,
     format: str | None,
     dry_run: bool,
     target: tuple[Path, ...],
+    fail_on_rule_error: bool,
 ):
     """Run structural governance checks on your codebase."""
     # Note: Click injects defaults from default_map, so values shouldn't be None 
@@ -100,6 +108,7 @@ def check(
     final_rules_dir = rules_dir or config.rules_dir
     final_format = format or config.format
     final_target = list(target) if target else config.target
+    final_fail_on_rule_error = fail_on_rule_error # Default map handles the config fallback
 
     # Load rule specifications
     try:
@@ -113,13 +122,22 @@ def check(
         sys.exit(1)
 
     # Run the enforcement engine
-    findings, new_findings, _, dry_output = run_sine(
+    findings, new_findings, _, errors, dry_output = run_sine(
         specs=specs,
         targets=final_target,
         dry_run=dry_run,
         update_baseline=update_baseline,
         discovery_only=False,
     )
+
+    # Report rule execution errors
+    if errors:
+        click.echo(f"Warning: {len(errors)} rules failed to execute:", err=True)
+        for error in errors:
+            click.echo(f"  [{error.rule_id}] {error.message}", err=True)
+        click.echo("", err=True)
+        if final_fail_on_rule_error:
+            sys.exit(1)
 
     # Report results
     if dry_run:
@@ -160,11 +178,17 @@ def check(
     multiple=True,
     help="Paths to analyze (defaults to current directory)",
 )
-def discover(rules_dir: Path | None, target: tuple[Path, ...]):
+@click.option(
+    "--fail-on-rule-error",
+    is_flag=True,
+    help="Exit with error if any rules fail to execute",
+)
+def discover(rules_dir: Path | None, target: tuple[Path, ...], fail_on_rule_error: bool):
     """Discover pattern instances in your codebase."""
     config = click.get_current_context().obj["config"]
     final_rules_dir = rules_dir or config.rules_dir
     final_target = list(target) if target else config.target
+    final_fail_on_rule_error = fail_on_rule_error
 
     # Load discovery specs
     try:
@@ -181,11 +205,20 @@ def discover(rules_dir: Path | None, target: tuple[Path, ...]):
         sys.exit(1)
 
     # Run pattern discovery
-    _, _, instances, _ = run_sine(
+    _, _, instances, errors, _ = run_sine(
         specs=discovery_specs,
         targets=final_target,
         discovery_only=True,
     )
+
+    # Report rule execution errors
+    if errors:
+        click.echo(f"Warning: {len(errors)} discovery rules failed to execute:", err=True)
+        for error in errors:
+            click.echo(f"  [{error.rule_id}] {error.message}", err=True)
+        click.echo("", err=True)
+        if final_fail_on_rule_error:
+            sys.exit(1)
 
     # Report discovered patterns
     click.echo(format_pattern_instances_text(instances))

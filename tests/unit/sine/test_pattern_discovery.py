@@ -148,7 +148,7 @@ def test_parse_semgrep_output_pattern_discovery():
         "PATTERN-001": spec_discovery,
     }
 
-    findings, pattern_instances = parse_semgrep_output(semgrep_output, spec_index)
+    findings, pattern_instances, errors = parse_semgrep_output(semgrep_output, spec_index)
 
     # Should have 1 finding (enforcement) and 1 pattern instance (discovery)
     assert len(findings) == 1
