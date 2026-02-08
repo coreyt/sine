@@ -2,6 +2,10 @@
 
 **Sine is not ESLint** - it's a next-generation code pattern enforcement and discovery tool.
 
+Sine can be considered a "Architectural Compliance Engine" or even better, a "Governance-as-Code Platform (GaP) tool."
+ * It enforces high-level architectural decisions (e.g., "All HTTP calls must use a circuit breaker") rather than low-level code style. It operates similarly to tools like ArchUnit or Open Policy Agent (OPA), but for code structure.
+ * Key Differentiator: The "Discovery" aspect. Most tools only enforce known rules. sine proposes to learn what rules should exist, making it a "Knowledge-Driven Governance Tool".
+
 ## What is Sine?
 
 Sine combines:
