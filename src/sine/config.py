@@ -8,6 +8,7 @@ Supports loading configuration from:
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 from typing import Any
@@ -76,5 +77,5 @@ class SineConfig(BaseModel):
                 
             return cls.model_validate(data)
         except Exception as e:
-            print(f"Warning: Failed to load config from {path}: {e}", file=sys.stderr)
+            logging.warning(f"Failed to load config from {path}: {e}")
             return cls()
