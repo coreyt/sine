@@ -184,3 +184,47 @@ def test_pattern_instance_immutable():
         assert False, "Should not be able to modify frozen dataclass"
     except (AttributeError, TypeError):
         pass  # Expected
+
+
+def test_compile_pattern_discovery_with_metavariable_regex():
+    """Test compilation of pattern_discovery rules with metavariable_regex."""
+    from sine.models import MetavariableRegex
+
+    spec = RuleSpecFile(
+        schema_version=1,
+        rule=RuleSpec(
+            id="PATTERN-TEST-REGEX",
+            title="Regex Pattern",
+            description="Test regex",
+            rationale="Testing",
+            tier=1,
+            category="test",
+            severity="info",
+            languages=["python"],
+            check=PatternDiscoveryCheck(
+                type="pattern_discovery",
+                patterns=["def $FUNC(...): ..."],
+                metavariable_regex=[
+                    MetavariableRegex(metavariable="$FUNC", regex="^create_.*")
+                ],
+            ),
+            reporting=RuleReporting(
+                default_message="Pattern found",
+                confidence="high",
+                documentation_url=None,
+            ),
+            examples=RuleExamples(good=[], bad=[]),
+            references=[],
+        ),
+    )
+
+    config = compile_semgrep_config([spec])
+    rule = config["rules"][0]
+    
+    assert len(rule["patterns"]) == 2
+    assert "pattern-either" in rule["patterns"][0]
+    assert "metavariable-regex" in rule["patterns"][1]
+    
+    mr = rule["patterns"][1]["metavariable-regex"]
+    assert mr["metavariable"] == "$FUNC"
+    assert mr["regex"] == "^create_.*"

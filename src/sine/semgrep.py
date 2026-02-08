@@ -101,7 +101,21 @@ def _compile_pattern_discovery(check: PatternDiscoveryCheck) -> list[dict[str, A
     Pattern discovery finds instances of patterns (descriptive), not violations (prescriptive).
     """
     # Use pattern-either to match any of the provided patterns
-    return [{"pattern-either": [{"pattern": p} for p in check.patterns]}]
+    patterns: list[dict[str, Any]] = [
+        {"pattern-either": [{"pattern": p} for p in check.patterns]}
+    ]
+
+    if check.metavariable_regex:
+        for mr in check.metavariable_regex:
+            patterns.append(
+                {
+                    "metavariable-regex": {
+                        "metavariable": mr.metavariable,
+                        "regex": mr.regex,
+                    }
+                }
+            )
+    return patterns
 
 
 def _wrapper_pattern(wrapper: str) -> str:

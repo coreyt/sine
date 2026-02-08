@@ -20,7 +20,10 @@ rule:
       - |
         class $ADAPTER:
           def __init__(self, $ADAPTEE):
-            self._$FIELD = $ADAPTEE
+            self.$FIELD = $ADAPTEE
+    metavariable_regex:
+      - metavariable: "$FIELD"
+        regex: "^_.*"
 
   reporting:
     default_message: "Adapter pattern detected. Class wraps another object to provide a different interface."

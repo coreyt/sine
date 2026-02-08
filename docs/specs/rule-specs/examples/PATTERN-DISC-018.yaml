@@ -18,8 +18,11 @@ rule:
     type: "pattern_discovery"
     patterns:
       - |
-        def is_$NAME($VAR):
+        def $NAME($VAR):
           return isinstance($VAR, ...)
+    metavariable_regex:
+      - metavariable: "$NAME"
+        regex: "^is_.*"
 
   reporting:
     default_message: "Type Guard pattern detected. Function narrows type using TypeGuard for type safety."

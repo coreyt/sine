@@ -33,10 +33,17 @@ class RawCheck(BaseModel):
     engine: str = "semgrep"
 
 
+class MetavariableRegex(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    metavariable: str
+    regex: str
+
+
 class PatternDiscoveryCheck(BaseModel):
     model_config = ConfigDict(extra="forbid")
     type: Literal["pattern_discovery"]
     patterns: list[str]
+    metavariable_regex: list[MetavariableRegex] | None = None
 
 
 RuleCheck = Annotated[

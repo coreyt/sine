@@ -20,7 +20,10 @@ rule:
       - |
         class $CLASS:
           def __init__(self, $DEP):
-            self._$FIELD = $DEP
+            self.$FIELD = $DEP
+    metavariable_regex:
+      - metavariable: "$FIELD"
+        regex: "^_.*"
 
   reporting:
     default_message: "Dependency Injection pattern detected. Dependencies are passed via constructor."
