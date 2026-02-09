@@ -224,6 +224,50 @@ def discover(rules_dir: Path | None, target: tuple[Path, ...], fail_on_rule_erro
 
 
 @cli.command()
+@click.option(
+    "--rules-dir",
+    type=click.Path(path_type=Path),
+    default=".sine-rules",
+    help="Directory to create for local rules",
+)
+@click.option(
+    "--copy-built-in-rules",
+    is_flag=True,
+    help="Copy all built-in rules to local rules directory",
+)
+@click.option(
+    "--non-interactive",
+    is_flag=True,
+    help="Skip interactive prompts and use defaults",
+)
+def init(rules_dir: Path, copy_built_in_rules: bool, non_interactive: bool):
+    """Initialize Sine configuration for your project.
+
+    Creates a configuration file (sine.toml or pyproject.toml) and sets up
+    the rules directory. Built-in rules are always available; this command
+    optionally copies them locally for customization.
+
+    Examples:
+
+        # Interactive setup (recommended)
+        sine init
+
+        # Non-interactive with defaults
+        sine init --non-interactive
+
+        # Copy built-in rules for customization
+        sine init --copy-built-in-rules
+    """
+    from sine.init import run_init
+
+    run_init(
+        rules_dir=rules_dir,
+        copy_built_in_rules=copy_built_in_rules,
+        interactive=not non_interactive,
+    )
+
+
+@cli.command()
 @click.argument("pattern-id")
 @click.option(
     "--patterns-dir",
