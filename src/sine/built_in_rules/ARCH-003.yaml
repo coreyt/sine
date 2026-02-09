@@ -1,0 +1,41 @@
+schema_version: 1
+
+rule:
+  id: "ARCH-003"
+  title: "Use logging instead of print statements"
+  description: |
+    Production code should use proper logging (Click.echo or logging module)
+    instead of print() statements for better control and formatting.
+  rationale: |
+    Print statements bypass structured logging and can't be filtered by log level.
+    Click.echo() respects output redirection and encoding.
+  tier: 1
+  category: "code-quality"
+  severity: "warning"
+  languages: [python]
+
+  check:
+    type: "forbidden"
+    pattern: "print(...)"
+
+  reporting:
+    default_message: "Use Click.echo() or logging instead of print() (ARCH-003)"
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          import logging
+          logging.info("Processing file")
+
+          import click
+          click.echo("Output message")
+    bad:
+      - language: python
+        code: |
+          print("Processing file")
+
+  references:
+    - "https://click.palletsprojects.com/en/8.1.x/api/#click.echo"

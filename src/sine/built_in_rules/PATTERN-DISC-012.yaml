@@ -1,0 +1,47 @@
+schema_version: 1
+
+rule:
+  id: "PATTERN-DISC-012"
+  title: "Context Manager Pattern"
+  description: |
+    Discovers usage of the Context Manager pattern where classes implement __enter__
+    and __exit__ methods for automatic resource management and cleanup.
+  rationale: |
+    Context Manager pattern ensures resources are properly acquired and released,
+    even in the presence of exceptions. Promotes safe resource handling with 'with' statements.
+  tier: 1
+  category: "architectural"
+  severity: "info"
+  languages: [python]
+
+  check:
+    type: "pattern_discovery"
+    patterns:
+      - |
+        class $MANAGER:
+          ...
+          def __enter__(self):
+            ...
+          def __exit__(self, ...):
+            ...
+
+  reporting:
+    default_message: "Context Manager pattern detected. Class implements __enter__ and __exit__ for resource management."
+    confidence: "high"
+    documentation_url: null
+
+  examples:
+    good:
+      - language: python
+        code: |
+          class DatabaseConnection:
+              def __enter__(self):
+                  self.conn = connect_to_db()
+                  return self.conn
+
+              def __exit__(self, exc_type, exc_val, exc_tb):
+                  self.conn.close()
+    bad: []
+
+  references:
+    - "https://docs.python.org/3/library/stdtypes.html#context-manager-types"
