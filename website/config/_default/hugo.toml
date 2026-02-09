@@ -1,0 +1,16 @@
+baseURL = "https://coreyt.github.io/sine/"
+languageCode = "en-us"
+title = "Sine - Architectural Pattern Enforcement"
+
+# Theme
+theme = "hugo-theme-stack"
+
+# Set hasCJKLanguage to true if DefaultContentLanguage is a CJK language
+hasCJKLanguage = false
+
+[pagination]
+pagerSize = 10
+
+[permalinks]
+post = "/p/:slug/"
+page = "/:slug/"
