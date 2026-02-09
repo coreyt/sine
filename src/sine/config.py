@@ -27,7 +27,7 @@ class SineConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     # Core settings
-    rules_dir: Path = Field(default=Path("rules"))
+    rules_dir: Path = Field(default=Path(".sine-rules"))
     target: list[Path] = Field(default_factory=lambda: [Path(".")])
     
     # Output settings

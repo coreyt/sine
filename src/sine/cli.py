@@ -8,6 +8,7 @@ from pathlib import Path
 import click
 
 from sine.config import SineConfig
+from sine.rules_loader import load_all_rules
 from sine.runner import (
     format_findings_json,
     format_findings_sarif,
@@ -58,7 +59,7 @@ def cli(ctx):
 @cli.command()
 @click.option(
     "--rules-dir",
-    type=click.Path(exists=True, path_type=Path),
+    type=click.Path(path_type=Path),
     help="Directory containing rule specifications",
 )
 @click.option(
@@ -110,15 +111,15 @@ def check(
     final_target = list(target) if target else config.target
     final_fail_on_rule_error = fail_on_rule_error # Default map handles the config fallback
 
-    # Load rule specifications
-    try:
-        specs = load_rule_specs(final_rules_dir)
-    except FileNotFoundError as e:
-        click.echo(f"Error: {e}", err=True)
-        sys.exit(1)
+    # Load rule specifications (built-in + user rules)
+    specs = load_all_rules(
+        user_rules_dir=final_rules_dir if final_rules_dir.exists() else None
+    )
 
     if not specs:
-        click.echo(f"No rule specifications found in {final_rules_dir}", err=True)
+        click.echo(
+            "No rule specifications found (neither built-in nor user rules)", err=True
+        )
         sys.exit(1)
 
     # Run the enforcement engine
@@ -169,7 +170,7 @@ def check(
 @cli.command()
 @click.option(
     "--rules-dir",
-    type=click.Path(exists=True, path_type=Path),
+    type=click.Path(path_type=Path),
     help="Directory containing pattern discovery specifications",
 )
 @click.option(
@@ -190,12 +191,10 @@ def discover(rules_dir: Path | None, target: tuple[Path, ...], fail_on_rule_erro
     final_target = list(target) if target else config.target
     final_fail_on_rule_error = fail_on_rule_error
 
-    # Load discovery specs
-    try:
-        specs = load_rule_specs(final_rules_dir)
-    except FileNotFoundError as e:
-        click.echo(f"Error: {e}", err=True)
-        sys.exit(1)
+    # Load discovery specs (built-in + user rules)
+    specs = load_all_rules(
+        user_rules_dir=final_rules_dir if final_rules_dir.exists() else None
+    )
 
     # Filter to only discovery specs
     discovery_specs = [s for s in specs if s.rule.check.type == "pattern_discovery"]
