@@ -14,6 +14,12 @@ Sine combines:
 
 ## Features
 
+### Built-In Rules (ESLint-style)
+- **7 curated architectural rules** shipped with the package
+- Works out-of-box without setup
+- Covers resilience patterns, code quality, and architectural patterns
+- Customizable: override or extend with local rules
+
 ### Core Enforcement Engine
 - Load rule specifications from YAML files
 - Compile specifications into Semgrep rules
@@ -21,6 +27,7 @@ Sine combines:
 - **Multiple Output Formats**: Text, JSON, and SARIF for CI/CD integration
 
 ### Governance Workflow
+- **Interactive Setup**: `sine init` command for easy onboarding
 - **Pattern Discovery**: Use AI-powered agents to find patterns in your code
 - **Promotion**: Transpile validated patterns into enforcement rules (`sine promote`)
 
@@ -33,12 +40,17 @@ pip install -e .
 ## Quick Start
 
 ```bash
-# Check your codebase against defined patterns
+# Initialize Sine for your project (interactive setup)
+sine init
+
+# Or just start checking with built-in rules
 sine check
 
-# Discover new patterns for a topic
-sine discover --topic "error handling"
+# Discover patterns in your codebase
+sine discover
 ```
+
+Sine works immediately without configuration - it ships with 7 built-in architectural rules. The `init` command helps you customize settings and optionally add project-specific rules.
 
 ## Project Status
 
