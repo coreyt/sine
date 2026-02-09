@@ -55,4 +55,21 @@ Sine is in active development. It was extracted from the [ling](https://github.c
 
 ## License
 
-MIT
+This project is licensed under the **Elastic License v2 (ELv2)**.
+
+We chose this license because we believe in building in the open, but we also believe in protecting the hard work our team has put into this project from being "strip-mined" by large cloud providers.
+
+#### What this means for you:
+
+* **Individuals & Companies:** You can use, modify, and redistribute the code for free for almost any internal or commercial use.
+* **Modifications:** You are free to modify the code to suit your or your customer's needs without being forced to open-source your proprietary changes (no "viral" copyleft).
+* **Contributions:** We welcome pull requests! (Note: contributions may require a simple CLA).
+
+#### What you cannot do:
+
+* **Managed Services:** You cannot provide this software as a managed service (SaaS) to third parties. If you are a hyperscaler or service provider looking to sell "Sine-as-a-Service," you must contact us for a commercial license.
+* **No Circumvention:** You cannot bypass any license key or security features built into the software.
+* **No Sublicensing:** You cannot sell the license to others or claim the code as your own.
+
+> **In short:** If you aren't trying to build a competing AWS-style managed service using our code, you are likely good to go.
+
