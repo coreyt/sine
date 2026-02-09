@@ -1,0 +1,17 @@
+{{ define "main" }}
+    <article class="main-article">
+        <header class="article-header">
+            <h1 class="article-title">{{ .Title }}</h1>
+        </header>
+
+        <section class="article-content">
+            {{ .Content }}
+        </section>
+    </article>
+
+    {{- partial "footer/footer" . -}}
+{{ end }}
+
+{{ define "right-sidebar" }}
+    {{ partial "sidebar/right.html" (dict "Context" . "Scope" "homepage") }}
+{{ end }}
