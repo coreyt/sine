@@ -6,9 +6,9 @@ import tempfile
 from pathlib import Path
 
 import yaml
+
 from sine.baseline import BASELINE_PATH, Baseline, filter_findings, load_baseline, write_baseline
 from sine.models import Finding, PatternInstance, RuleError, RuleSpecFile
-from sine.sarif import format_findings_sarif
 from sine.semgrep import (
     build_semgrep_command,
     compile_semgrep_config,
@@ -89,9 +89,7 @@ def format_findings_text(findings: list[Finding]) -> str:
         return "No violations found."
     lines = []
     for finding in findings:
-        lines.append(
-            f"{finding.file}:{finding.line} [{finding.guideline_id}] {finding.message}"
-        )
+        lines.append(f"{finding.file}:{finding.line} [{finding.guideline_id}] {finding.message}")
     return "\n".join(lines)
 
 

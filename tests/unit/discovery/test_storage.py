@@ -8,7 +8,6 @@ Test cases:
 - TC-PD-014: Pattern existence checks
 """
 
-import json
 from pathlib import Path
 
 import pytest
@@ -51,7 +50,9 @@ class TestPatternStorage:
         """Test loading nonexistent pattern returns None."""
         storage = PatternStorage(tmp_path)
 
-        result = storage.load_pattern("NONEXISTENT-XXX-999", stage="raw", model_class=DiscoveredPattern)
+        result = storage.load_pattern(
+            "NONEXISTENT-XXX-999", stage="raw", model_class=DiscoveredPattern
+        )
 
         assert result is None
 
@@ -216,7 +217,9 @@ class TestListPatterns:
 class TestErrorHandling:
     """TC-PD-013: Error handling for corrupted files."""
 
-    def test_load_corrupted_json_returns_none(self, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    def test_load_corrupted_json_returns_none(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Test loading corrupted JSON returns None and logs warning."""
         storage = PatternStorage(tmp_path)
 
@@ -229,7 +232,9 @@ class TestErrorHandling:
         assert result is None
         assert "Failed to load pattern" in caplog.text
 
-    def test_list_patterns_skips_corrupted_files(self, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    def test_list_patterns_skips_corrupted_files(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Test that list_patterns skips corrupted files and logs warnings."""
         storage = PatternStorage(tmp_path)
 
@@ -386,7 +391,9 @@ class TestValidatedPatternStorage:
         )
 
         storage.save_pattern(validated, stage="validated")
-        loaded = storage.load_pattern("ARCH-DI-001", stage="validated", model_class=ValidatedPattern)
+        loaded = storage.load_pattern(
+            "ARCH-DI-001", stage="validated", model_class=ValidatedPattern
+        )
 
         assert loaded is not None
         assert loaded.discovered.pattern_id == "ARCH-DI-001"

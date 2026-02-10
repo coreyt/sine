@@ -157,6 +157,4 @@ def validate_agent(agent: object) -> bool:
     Returns:
         True if the object has a discover_patterns method with correct signature
     """
-    return hasattr(agent, "discover_patterns") and callable(
-        agent.discover_patterns
-    )
+    return hasattr(agent, "discover_patterns") and callable(agent.discover_patterns)

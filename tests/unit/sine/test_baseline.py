@@ -21,4 +21,3 @@ def test_filter_findings_removes_known() -> None:
     remaining = filter_findings([finding], baseline)
 
     assert remaining == []
-

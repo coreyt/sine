@@ -155,9 +155,7 @@ class ArchitectureAgent:
         Returns:
             List of discovered patterns
         """
-        logger.info(
-            f"Discovering architecture patterns: {focus.description}"
-        )
+        logger.info(f"Discovering architecture patterns: {focus.description}")
 
         # Build search query
         search_query = self._build_search_query(focus, constraints)
@@ -171,10 +169,7 @@ class ArchitectureAgent:
         # Search for relevant content
         search_results = await self.search_client.search(search_query)
 
-        logger.info(
-            f"Found {len(search_results)} search results, "
-            f"extracting patterns..."
-        )
+        logger.info(f"Found {len(search_results)} search results, extracting patterns...")
 
         # Extract patterns from each result
         all_patterns: list[DiscoveredPattern] = []
@@ -207,9 +202,7 @@ class ArchitectureAgent:
         # Deduplicate patterns
         deduplicated = self._deduplicate_patterns(all_patterns)
 
-        logger.info(
-            f"Discovered {len(deduplicated)} unique architecture patterns"
-        )
+        logger.info(f"Discovered {len(deduplicated)} unique architecture patterns")
 
         # Limit to max_results
         return deduplicated[: constraints.max_results]
@@ -230,7 +223,6 @@ class ArchitectureAgent:
         """
         # Combine focus keywords with architecture keywords
         keywords = focus.keywords or []
-        all_keywords = keywords + self.ARCHITECTURE_KEYWORDS[:5]
 
         # Build query string
         query_parts = [focus.description]
@@ -267,23 +259,20 @@ class ArchitectureAgent:
 
         for pattern in patterns:
             # Filter by language
-            if constraints.languages:
-                # If pattern has languages, check for overlap
-                if pattern.languages:
-                    if not any(
-                        lang in constraints.languages
-                        for lang in pattern.languages
-                    ):
-                        continue
-                # If pattern has no languages, it's language-agnostic (keep it)
+            if (
+                constraints.languages
+                and pattern.languages
+                and not any(lang in constraints.languages for lang in pattern.languages)
+            ):
+                continue
 
             # Filter by framework
-            if constraints.frameworks:
-                # If pattern has framework, check if it's in the allowed list
-                if pattern.framework:
-                    if pattern.framework not in constraints.frameworks:
-                        continue
-                # If pattern has no framework, it's framework-agnostic (keep it)
+            if (
+                constraints.frameworks
+                and pattern.framework
+                and pattern.framework not in constraints.frameworks
+            ):
+                continue
 
             # Filter by confidence
             confidence_levels = {"low": 1, "medium": 2, "high": 3}
@@ -331,9 +320,7 @@ class ArchitectureAgent:
                     seen[pattern.pattern_id] = pattern
                 elif new_level == existing_level:
                     # Compare credibility from evidence
-                    existing_cred = float(
-                        existing.evidence.get("credibility", "0.5")
-                    )
+                    existing_cred = float(existing.evidence.get("credibility", "0.5"))
                     new_cred = float(pattern.evidence.get("credibility", "0.5"))
 
                     if new_cred > existing_cred:

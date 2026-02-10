@@ -43,7 +43,11 @@ class TestLLMExtractor:
             "content": [
                 {
                     "text": json.dumps(
-                        [make_pattern_data("SEC-SQL-001", "Prevent SQL Injection", "security", "injection")]
+                        [
+                            make_pattern_data(
+                                "SEC-SQL-001", "Prevent SQL Injection", "security", "injection"
+                            )
+                        ]
                     )
                 }
             ],
@@ -100,7 +104,14 @@ class TestLLMExtractor:
                 {
                     "message": {
                         "content": json.dumps(
-                            [make_pattern_data("ARCH-DI-001", "Use Dependency Injection", "architecture", "dependency-injection")]
+                            [
+                                make_pattern_data(
+                                    "ARCH-DI-001",
+                                    "Use Dependency Injection",
+                                    "architecture",
+                                    "dependency-injection",
+                                )
+                            ]
                         )
                     }
                 }
@@ -150,7 +161,14 @@ class TestLLMExtractor:
                         "parts": [
                             {
                                 "text": json.dumps(
-                                    [make_pattern_data("PERF-CACHE-001", "Use Caching Strategically", "performance", "caching")]
+                                    [
+                                        make_pattern_data(
+                                            "PERF-CACHE-001",
+                                            "Use Caching Strategically",
+                                            "performance",
+                                            "caching",
+                                        )
+                                    ]
                                 )
                             }
                         ]
@@ -195,11 +213,7 @@ class TestLLMExtractor:
         # Some LLMs may wrap JSON in markdown code blocks
         pattern_data = make_pattern_data("TEST-TST-001", "Test Pattern Name", "test")
         mock_response = {
-            "content": [
-                {
-                    "text": f'```json\n{json.dumps([pattern_data])}\n```'
-                }
-            ],
+            "content": [{"text": f"```json\n{json.dumps([pattern_data])}\n```"}],
             "usage": {"input_tokens": 100, "output_tokens": 50},
         }
 

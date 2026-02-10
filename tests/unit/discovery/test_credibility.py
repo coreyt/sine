@@ -131,10 +131,7 @@ class TestSourceCredibilityScorer:
 
         # Total should be sum of tiers
         assert counts["total"] == (
-            counts["high"]
-            + counts["medium-high"]
-            + counts["medium"]
-            + counts["low"]
+            counts["high"] + counts["medium-high"] + counts["medium"] + counts["low"]
         )
 
         # Should have reasonable numbers

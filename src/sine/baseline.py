@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 from sine.models import Finding
 
@@ -22,7 +22,7 @@ class Baseline:
     entries: set[BaselineEntry]
 
     @classmethod
-    def from_findings(cls, findings: Iterable[Finding]) -> "Baseline":
+    def from_findings(cls, findings: Iterable[Finding]) -> Baseline:
         return cls(entries={_entry_from_finding(finding) for finding in findings})
 
     def to_dict(self) -> dict:
@@ -35,7 +35,9 @@ class Baseline:
                     "line": entry.line,
                     "hash": entry.hash,
                 }
-                for entry in sorted(self.entries, key=lambda item: (item.guideline_id, item.file, item.line))
+                for entry in sorted(
+                    self.entries, key=lambda item: (item.guideline_id, item.file, item.line)
+                )
             ],
         }
 
@@ -67,7 +69,9 @@ def filter_findings(findings: list[Finding], baseline: Baseline | None) -> list[
     if baseline is None:
         return findings
     baseline_hashes = {entry.hash for entry in baseline.entries}
-    return [finding for finding in findings if _entry_from_finding(finding).hash not in baseline_hashes]
+    return [
+        finding for finding in findings if _entry_from_finding(finding).hash not in baseline_hashes
+    ]
 
 
 def _entry_from_finding(finding: Finding) -> BaselineEntry:
@@ -79,4 +83,3 @@ def _entry_from_finding(finding: Finding) -> BaselineEntry:
         line=finding.line,
         hash=hash_value,
     )
-

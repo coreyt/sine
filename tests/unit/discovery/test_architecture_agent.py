@@ -41,7 +41,8 @@ class TestArchitectureAgent:
     @pytest.fixture
     def sample_pattern(self):
         """Create a sample discovered pattern."""
-        from sine.discovery.models import PatternExamples, PatternExample
+        from sine.discovery.models import PatternExample, PatternExamples
+
         return DiscoveredPattern(
             pattern_id="ARCH-DI-001",
             title="Use Dependency Injection for Loose Coupling",
@@ -58,15 +59,15 @@ class TestArchitectureAgent:
                 good=[
                     PatternExample(
                         language="python",
-                        code="class UserService:\n    def __init__(self, repo: UserRepository):\n        self.repo = repo"
+                        code="class UserService:\n    def __init__(self, repo: UserRepository):\n        self.repo = repo",
                     )
                 ],
                 bad=[
                     PatternExample(
                         language="python",
-                        code="class UserService:\n    def __init__(self):\n        self.repo = UserRepository()"
+                        code="class UserService:\n    def __init__(self):\n        self.repo = UserRepository()",
                     )
-                ]
+                ],
             ),
             evidence={"credibility": "0.95", "rank": "1"},
         )
@@ -144,6 +145,7 @@ class TestArchitectureAgent:
     ):
         """Test filtering patterns by language."""
         from sine.discovery.models import PatternExamples
+
         # Create patterns with different languages
         python_pattern = DiscoveredPattern(
             pattern_id="ARCH-DSGN-001",
@@ -228,6 +230,7 @@ class TestArchitectureAgent:
     ):
         """Test filtering patterns by framework."""
         from sine.discovery.models import PatternExamples
+
         django_pattern = DiscoveredPattern(
             pattern_id="ARCH-DSGN-001",
             title="Django Pattern",
@@ -294,6 +297,7 @@ class TestArchitectureAgent:
     ):
         """Test filtering patterns by confidence level."""
         from sine.discovery.models import PatternExamples
+
         high_pattern = DiscoveredPattern(
             pattern_id="ARCH-DSGN-001",
             title="High Confidence Pattern",
@@ -369,11 +373,10 @@ class TestArchitectureAgent:
         assert "ARCH-DSGN-003" not in pattern_ids  # Low (filtered out)
 
     @pytest.mark.asyncio
-    async def test_deduplication(
-        self, mock_extractor, mock_search_client, sample_search_result
-    ):
+    async def test_deduplication(self, mock_extractor, mock_search_client, sample_search_result):
         """Test that duplicate patterns are removed."""
         from sine.discovery.models import PatternExamples
+
         # Two search results
         results = [sample_search_result, sample_search_result]
 
@@ -416,13 +419,9 @@ class TestArchitectureAgent:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                return ExtractionResult(
-                    patterns=[pattern1], confidence=0.9, method="hybrid"
-                )
+                return ExtractionResult(patterns=[pattern1], confidence=0.9, method="hybrid")
             else:
-                return ExtractionResult(
-                    patterns=[pattern2], confidence=0.7, method="hybrid"
-                )
+                return ExtractionResult(patterns=[pattern2], confidence=0.7, method="hybrid")
 
         mock_extractor.extract_patterns = AsyncMock(side_effect=extract_side_effect)
 
@@ -451,6 +450,7 @@ class TestArchitectureAgent:
     ):
         """Test that max_results is respected."""
         from sine.discovery.models import PatternExamples
+
         # Create 5 different patterns
         patterns = []
         for i in range(5):

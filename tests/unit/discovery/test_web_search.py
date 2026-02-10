@@ -121,6 +121,7 @@ class TestWebSearchClient:
     @pytest.mark.asyncio
     async def test_results_scored_by_credibility(self, mock_scorer):
         """Test that results are scored by credibility."""
+
         # Configure mock to return different scores
         def score_side_effect(url):
             if "high-cred.com" in url:
@@ -153,9 +154,7 @@ class TestWebSearchClient:
         async with WebSearchClient(
             mock_scorer, cache_enabled=True, rate_limit_seconds=0.0
         ) as client:
-            mock_results = [
-                {"url": "https://example.com", "title": "Result", "snippet": ""}
-            ]
+            mock_results = [{"url": "https://example.com", "title": "Result", "snippet": ""}]
             client._execute_search = AsyncMock(return_value=mock_results)
 
             query = SearchQuery(query="test", focus_type="test")
@@ -177,9 +176,7 @@ class TestWebSearchClient:
         async with WebSearchClient(
             mock_scorer, cache_enabled=False, rate_limit_seconds=0.0
         ) as client:
-            mock_results = [
-                {"url": "https://example.com", "title": "Result", "snippet": ""}
-            ]
+            mock_results = [{"url": "https://example.com", "title": "Result", "snippet": ""}]
             client._execute_search = AsyncMock(return_value=mock_results)
 
             query = SearchQuery(query="test", focus_type="test")
@@ -199,9 +196,7 @@ class TestWebSearchClient:
         async with WebSearchClient(
             mock_scorer, rate_limit_seconds=0.1, cache_enabled=False
         ) as client:
-            mock_results = [
-                {"url": "https://example.com", "title": "Result", "snippet": ""}
-            ]
+            mock_results = [{"url": "https://example.com", "title": "Result", "snippet": ""}]
             client._execute_search = AsyncMock(return_value=mock_results)
 
             query = SearchQuery(query="test", focus_type="test")
@@ -225,9 +220,7 @@ class TestWebSearchClient:
         async with WebSearchClient(
             mock_scorer, cache_enabled=True, rate_limit_seconds=0.0
         ) as client:
-            mock_results = [
-                {"url": "https://example.com", "title": "Result", "snippet": ""}
-            ]
+            mock_results = [{"url": "https://example.com", "title": "Result", "snippet": ""}]
             client._execute_search = AsyncMock(return_value=mock_results)
 
             # Same query but different focus types
@@ -246,9 +239,7 @@ class TestWebSearchClient:
         async with WebSearchClient(
             mock_scorer, cache_enabled=True, rate_limit_seconds=0.0
         ) as client:
-            mock_results = [
-                {"url": "https://example.com", "title": "Result", "snippet": ""}
-            ]
+            mock_results = [{"url": "https://example.com", "title": "Result", "snippet": ""}]
             client._execute_search = AsyncMock(return_value=mock_results)
 
             query = SearchQuery(query="test", focus_type="test")
@@ -268,9 +259,7 @@ class TestWebSearchClient:
     async def test_result_metadata_populated(self, mock_scorer):
         """Test that result metadata is properly populated."""
         async with WebSearchClient(mock_scorer, rate_limit_seconds=0.0) as client:
-            mock_results = [
-                {"url": "https://example.com", "title": "Result", "snippet": ""}
-            ]
+            mock_results = [{"url": "https://example.com", "title": "Result", "snippet": ""}]
             client._execute_search = AsyncMock(return_value=mock_results)
 
             query = SearchQuery(query="test", focus_type="test")

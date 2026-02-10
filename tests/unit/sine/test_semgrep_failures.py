@@ -3,9 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
-from unittest.mock import Mock
 
-import pytest
 from sine.models import (
     ForbiddenCheck,
     RuleExamples,
@@ -14,6 +12,7 @@ from sine.models import (
     RuleSpecFile,
 )
 from sine.runner import run_sine
+
 
 def _spec() -> RuleSpecFile:
     return RuleSpecFile(
@@ -38,30 +37,30 @@ def _spec() -> RuleSpecFile:
         ),
     )
 
+
 def test_run_sine_reports_parse_errors(monkeypatch) -> None:
     # Simulate Semgrep output with both results and errors
-    semgrep_output = json.dumps({
-        "results": [],
-        "errors": [
-            {
-                "code": 2,
-                "level": "error",
-                "type": "Rule parse error",
-                "rule_id": "arch-010-impl",
-                "message": "Invalid pattern"
-            }
-        ]
-    })
-    
+    semgrep_output = json.dumps(
+        {
+            "results": [],
+            "errors": [
+                {
+                    "code": 2,
+                    "level": "error",
+                    "type": "Rule parse error",
+                    "rule_id": "arch-010-impl",
+                    "message": "Invalid pattern",
+                }
+            ],
+        }
+    )
+
     fake_result = subprocess.CompletedProcess(
-        args=["semgrep"], 
-        returncode=2, 
-        stdout=semgrep_output, 
-        stderr=""
+        args=["semgrep"], returncode=2, stdout=semgrep_output, stderr=""
     )
 
     monkeypatch.setattr("sine.runner.subprocess.run", lambda *args, **kwargs: fake_result)
-    
+
     # Mock other dependencies
     monkeypatch.setattr("sine.runner.load_baseline", lambda *args, **kwargs: None)
     monkeypatch.setattr("sine.runner.filter_findings", lambda f, b: f)
@@ -71,9 +70,8 @@ def test_run_sine_reports_parse_errors(monkeypatch) -> None:
         specs=[_spec()],
         targets=[Path("src")],
     )
-    
+
     # Assert that we captured the error
     assert len(errors) == 1
     assert errors[0].rule_id == "ARCH-010"
     assert "Invalid pattern" in errors[0].message
-

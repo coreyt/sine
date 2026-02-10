@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 
 from sine.cli import cli
@@ -110,9 +108,7 @@ rule:
         (project_dir / "example.py").write_text("import os\n")
 
         # Create sine.toml config
-        (project_dir / "sine.toml").write_text(
-            'rules_dir = ".sine-rules"\ntarget = ["."]\n'
-        )
+        (project_dir / "sine.toml").write_text('rules_dir = ".sine-rules"\ntarget = ["."]\n')
 
         # Change to project directory
         monkeypatch.chdir(project_dir)
@@ -170,9 +166,7 @@ rule:
         (project_dir / "example.py").write_text('print("hello")\n')
 
         # Create config
-        (project_dir / "sine.toml").write_text(
-            'rules_dir = ".sine-rules"\ntarget = ["."]\n'
-        )
+        (project_dir / "sine.toml").write_text('rules_dir = ".sine-rules"\ntarget = ["."]\n')
 
         monkeypatch.chdir(project_dir)
 

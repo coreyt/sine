@@ -10,7 +10,6 @@ import pytest
 
 from sine.discovery.agents.base import (
     AgentRegistry,
-    PatternAgent,
     SearchConstraints,
     SearchFocus,
     validate_agent,

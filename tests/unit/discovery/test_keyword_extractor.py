@@ -35,9 +35,7 @@ class TestKeywordExtractor:
             assert len(result.patterns) >= 1
 
             # Should find SQL injection pattern
-            sql_pattern = next(
-                (p for p in result.patterns if "SQL" in p.title), None
-            )
+            sql_pattern = next((p for p in result.patterns if "SQL" in p.title), None)
             assert sql_pattern is not None
             assert sql_pattern.category == "security"
             assert sql_pattern.subcategory == "injection"

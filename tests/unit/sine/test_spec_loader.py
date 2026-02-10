@@ -41,4 +41,3 @@ def test_load_rule_specs_reads_yaml(tmp_path: Path) -> None:
     specs = load_rule_specs(tmp_path)
     assert len(specs) == 1
     assert specs[0].rule.id == "ARCH-100"
-

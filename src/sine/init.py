@@ -50,9 +50,7 @@ def prompt_user_config(project_info: dict[str, bool]) -> dict:
 
     # Ask about config file location
     if project_info["python"]:
-        use_pyproject = click.confirm(
-            "Use pyproject.toml for configuration?", default=True
-        )
+        use_pyproject = click.confirm("Use pyproject.toml for configuration?", default=True)
         config["config_file"] = "pyproject.toml" if use_pyproject else "sine.toml"
     else:
         config["config_file"] = "sine.toml"
@@ -86,10 +84,7 @@ def generate_config_content(config: dict, rules_dir: Path) -> str:
     Returns:
         TOML configuration string
     """
-    if config["config_file"] == "pyproject.toml":
-        prefix = "[tool.sine]\n"
-    else:
-        prefix = ""
+    prefix = "[tool.sine]\n" if config["config_file"] == "pyproject.toml" else ""
 
     target_str = ", ".join([f'"{t}"' for t in config["target"]])
 
@@ -99,9 +94,7 @@ format = "{config["format"]}"
 """
 
 
-def copy_built_in_rules_to_local(
-    rules_dir: Path, selected_ids: list[str] | None = None
-) -> None:
+def copy_built_in_rules_to_local(rules_dir: Path, selected_ids: list[str] | None = None) -> None:
     """Copy built-in rules to local directory.
 
     Args:
@@ -164,9 +157,7 @@ def run_init(
     # Check if config already exists
     if config["config_file"] == "sine.toml" and config_file.exists():
         if interactive:
-            if not click.confirm(
-                f"{config['config_file']} already exists. Overwrite?"
-            ):
+            if not click.confirm(f"{config['config_file']} already exists. Overwrite?"):
                 click.echo("Initialization cancelled.")
                 sys.exit(0)
         else:

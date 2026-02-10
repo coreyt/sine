@@ -16,4 +16,3 @@ def load_rule_specs(directory: Path) -> list[RuleSpecFile]:
             data = yaml.safe_load(handle)
         specs.append(RuleSpecFile.model_validate(data))
     return specs
-

@@ -6,7 +6,6 @@ from sine.models import (
     ForbiddenCheck,
     PatternDiscoveryCheck,
     PatternInstance,
-    RuleCheck,
     RuleExamples,
     RuleReporting,
     RuleSpec,
@@ -181,7 +180,7 @@ def test_pattern_instance_immutable():
     # Should not be able to modify
     try:
         instance.line = 2  # type: ignore
-        assert False, "Should not be able to modify frozen dataclass"
+        raise AssertionError("Should not be able to modify frozen dataclass")
     except (AttributeError, TypeError):
         pass  # Expected
 
@@ -204,9 +203,7 @@ def test_compile_pattern_discovery_with_metavariable_regex():
             check=PatternDiscoveryCheck(
                 type="pattern_discovery",
                 patterns=["def $FUNC(...): ..."],
-                metavariable_regex=[
-                    MetavariableRegex(metavariable="$FUNC", regex="^create_.*")
-                ],
+                metavariable_regex=[MetavariableRegex(metavariable="$FUNC", regex="^create_.*")],
             ),
             reporting=RuleReporting(
                 default_message="Pattern found",
@@ -220,11 +217,11 @@ def test_compile_pattern_discovery_with_metavariable_regex():
 
     config = compile_semgrep_config([spec])
     rule = config["rules"][0]
-    
+
     assert len(rule["patterns"]) == 2
     assert "pattern-either" in rule["patterns"][0]
     assert "metavariable-regex" in rule["patterns"][1]
-    
+
     mr = rule["patterns"][1]["metavariable-regex"]
     assert mr["metavariable"] == "$FUNC"
     assert mr["regex"] == "^create_.*"

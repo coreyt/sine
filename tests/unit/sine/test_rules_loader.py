@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from sine.models import RuleSpecFile
 from sine.rules_loader import get_built_in_rules_path, load_all_rules, load_built_in_rules
 
@@ -53,9 +51,7 @@ class TestLoadBuiltInRules:
         """Should return empty list if built-in rules directory doesn't exist."""
         # Mock get_built_in_rules_path to return non-existent path
         fake_path = Path("/nonexistent/path")
-        monkeypatch.setattr(
-            "sine.rules_loader.get_built_in_rules_path", lambda: fake_path
-        )
+        monkeypatch.setattr("sine.rules_loader.get_built_in_rules_path", lambda: fake_path)
         rules = load_built_in_rules()
         assert rules == []
 

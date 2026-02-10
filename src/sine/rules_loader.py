@@ -6,17 +6,11 @@ with user rules taking precedence by rule ID (ESLint-style).
 
 from __future__ import annotations
 
-import sys
+from importlib.resources import files
 from pathlib import Path
 
 from sine.models import RuleSpecFile
 from sine.specs import load_rule_specs
-
-if sys.version_info >= (3, 9):
-    from importlib.resources import files
-else:
-    # Fallback for Python 3.8 (though Sine requires 3.10+)
-    from importlib.resources import path as resources_path
 
 
 def get_built_in_rules_path() -> Path:
@@ -28,16 +22,9 @@ def get_built_in_rules_path() -> Path:
     Returns:
         Path to built_in_rules directory
     """
-    if sys.version_info >= (3, 9):
-        # Python 3.9+: Use importlib.resources.files()
-        import sine
+    import sine
 
-        return Path(str(files(sine) / "built_in_rules"))
-    else:
-        # Fallback: Use __file__ based path resolution
-        import sine
-
-        return Path(sine.__file__).parent / "built_in_rules"
+    return Path(str(files(sine) / "built_in_rules"))
 
 
 def load_built_in_rules() -> list[RuleSpecFile]:

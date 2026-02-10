@@ -72,9 +72,7 @@ class TestHybridExtractor:
                 method="keyword",
                 metadata={},
             )
-            extractor.keyword_extractor.extract_patterns = AsyncMock(
-                return_value=keyword_result
-            )
+            extractor.keyword_extractor.extract_patterns = AsyncMock(return_value=keyword_result)
 
             # Mock LLM stage
             llm_result = ExtractionResult(
@@ -115,9 +113,7 @@ class TestHybridExtractor:
                 method="keyword",
                 metadata={},
             )
-            extractor.keyword_extractor.extract_patterns = AsyncMock(
-                return_value=keyword_result
-            )
+            extractor.keyword_extractor.extract_patterns = AsyncMock(return_value=keyword_result)
 
             # Mock LLM stage
             extractor.llm_extractor.extract_patterns = AsyncMock()
@@ -136,9 +132,7 @@ class TestHybridExtractor:
             assert result.confidence == 0.3
 
     @pytest.mark.asyncio
-    async def test_pattern_merging_prefers_llm(
-        self, sample_context, sample_discovered_pattern
-    ):
+    async def test_pattern_merging_prefers_llm(self, sample_context, sample_discovered_pattern):
         """Test that pattern merging prefers LLM patterns over keyword patterns."""
         # Create patterns with same category/subcategory
         keyword_pattern = DiscoveredPattern(
@@ -175,9 +169,7 @@ class TestHybridExtractor:
                 metadata={},
             )
 
-            extractor.keyword_extractor.extract_patterns = AsyncMock(
-                return_value=keyword_result
-            )
+            extractor.keyword_extractor.extract_patterns = AsyncMock(return_value=keyword_result)
             extractor.llm_extractor.extract_patterns = AsyncMock(return_value=llm_result)
 
             result = await extractor.extract_patterns(sample_context)
@@ -226,9 +218,7 @@ class TestHybridExtractor:
                 metadata={},
             )
 
-            extractor.keyword_extractor.extract_patterns = AsyncMock(
-                return_value=keyword_result
-            )
+            extractor.keyword_extractor.extract_patterns = AsyncMock(return_value=keyword_result)
             extractor.llm_extractor.extract_patterns = AsyncMock(return_value=llm_result)
 
             result = await extractor.extract_patterns(sample_context)
@@ -262,9 +252,7 @@ class TestHybridExtractor:
                 metadata={},
             )
 
-            extractor.keyword_extractor.extract_patterns = AsyncMock(
-                return_value=keyword_result
-            )
+            extractor.keyword_extractor.extract_patterns = AsyncMock(return_value=keyword_result)
             extractor.llm_extractor.extract_patterns = AsyncMock(return_value=llm_result)
 
             result = await extractor.extract_patterns(sample_context)
@@ -274,9 +262,7 @@ class TestHybridExtractor:
             assert abs(result.confidence - expected) < 0.01
 
     @pytest.mark.asyncio
-    async def test_keyword_max_results_respected(
-        self, sample_context, sample_discovered_pattern
-    ):
+    async def test_keyword_max_results_respected(self, sample_context, sample_discovered_pattern):
         """Test that keyword_max_results limits patterns when LLM is skipped."""
         # Create 5 keyword patterns
         keyword_patterns = [
@@ -302,9 +288,7 @@ class TestHybridExtractor:
                 method="keyword",
                 metadata={},
             )
-            extractor.keyword_extractor.extract_patterns = AsyncMock(
-                return_value=keyword_result
-            )
+            extractor.keyword_extractor.extract_patterns = AsyncMock(return_value=keyword_result)
 
             result = await extractor.extract_patterns(sample_context)
 
@@ -352,9 +336,7 @@ class TestHybridExtractor:
                 },
             )
 
-            extractor.keyword_extractor.extract_patterns = AsyncMock(
-                return_value=keyword_result
-            )
+            extractor.keyword_extractor.extract_patterns = AsyncMock(return_value=keyword_result)
             extractor.llm_extractor.extract_patterns = AsyncMock(return_value=llm_result)
 
             result = await extractor.extract_patterns(sample_context)
@@ -386,9 +368,7 @@ class TestHybridExtractor:
                 metadata={},
             )
 
-            extractor.keyword_extractor.extract_patterns = AsyncMock(
-                return_value=keyword_result
-            )
+            extractor.keyword_extractor.extract_patterns = AsyncMock(return_value=keyword_result)
             extractor.llm_extractor.extract_patterns = AsyncMock(return_value=llm_result)
 
             result = await extractor.extract_patterns(sample_context)

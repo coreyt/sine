@@ -140,9 +140,7 @@ class TestPatternExtractor:
         class ConcreteExtractor(PatternExtractor):
             """Minimal concrete extractor for testing."""
 
-            async def extract_patterns(
-                self, context: ExtractionContext
-            ) -> ExtractionResult:
+            async def extract_patterns(self, context: ExtractionContext) -> ExtractionResult:
                 return ExtractionResult(
                     patterns=[sample_discovered_pattern],
                     confidence=1.0,
@@ -187,9 +185,7 @@ class TestPatternExtractor:
                 self.cleaned_up = True
                 await super().__aexit__(exc_type, exc_val, exc_tb)
 
-            async def extract_patterns(
-                self, context: ExtractionContext
-            ) -> ExtractionResult:
+            async def extract_patterns(self, context: ExtractionContext) -> ExtractionResult:
                 return ExtractionResult(
                     patterns=[sample_discovered_pattern],
                     confidence=1.0,
@@ -210,17 +206,13 @@ class TestPatternExtractor:
         assert extractor.cleaned_up
 
     @pytest.mark.asyncio
-    async def test_default_context_manager_implementation(
-        self, sample_discovered_pattern
-    ):
+    async def test_default_context_manager_implementation(self, sample_discovered_pattern):
         """Test that default __aenter__ and __aexit__ work."""
 
         class MinimalExtractor(PatternExtractor):
             """Extractor using default context manager."""
 
-            async def extract_patterns(
-                self, context: ExtractionContext
-            ) -> ExtractionResult:
+            async def extract_patterns(self, context: ExtractionContext) -> ExtractionResult:
                 return ExtractionResult(
                     patterns=[sample_discovered_pattern],
                     confidence=1.0,

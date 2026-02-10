@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -47,13 +47,7 @@ class PatternDiscoveryCheck(BaseModel):
 
 
 RuleCheck = Annotated[
-    Union[
-        MustWrapCheck,
-        ForbiddenCheck,
-        RequiredWithCheck,
-        RawCheck,
-        PatternDiscoveryCheck,
-    ],
+    MustWrapCheck | ForbiddenCheck | RequiredWithCheck | RawCheck | PatternDiscoveryCheck,
     Field(discriminator="type"),
 ]
 

@@ -58,7 +58,13 @@ PATTERN_TEMPLATES: list[PatternTemplate] = [
         description="Services should use constructor injection for their dependencies instead of instantiating them directly.",
         rationale="Enables testing, loose coupling, and easier refactoring.",
         severity="warning",
-        keywords=["dependency injection", "di", "constructor injection", "ioc", "inversion of control"],
+        keywords=[
+            "dependency injection",
+            "di",
+            "constructor injection",
+            "ioc",
+            "inversion of control",
+        ],
         languages=["python", "typescript", "java", "csharp"],
     ),
     PatternTemplate(
@@ -125,7 +131,13 @@ PATTERN_TEMPLATES: list[PatternTemplate] = [
         description="Sanitize and escape user input before rendering in HTML.",
         rationale="Prevents XSS attacks that can steal user credentials or session tokens.",
         severity="error",
-        keywords=["xss", "cross-site scripting", "sanitize input", "escape html", "content security policy"],
+        keywords=[
+            "xss",
+            "cross-site scripting",
+            "sanitize input",
+            "escape html",
+            "content security policy",
+        ],
         languages=["typescript", "python"],
     ),
     PatternTemplate(
@@ -289,9 +301,7 @@ class KeywordExtractor(PatternExtractor):
         # Overall confidence is average of pattern confidences
         if patterns:
             confidence_map = {"high": 1.0, "medium": 0.66, "low": 0.33}
-            avg_confidence = sum(confidence_map[p.confidence] for p in patterns) / len(
-                patterns
-            )
+            avg_confidence = sum(confidence_map[p.confidence] for p in patterns) / len(patterns)
         else:
             avg_confidence = 0.0
 
@@ -305,9 +315,7 @@ class KeywordExtractor(PatternExtractor):
             },
         )
 
-    def _count_keywords(
-        self, text_lower: str, keywords: list[str]
-    ) -> Counter[str]:
+    def _count_keywords(self, text_lower: str, keywords: list[str]) -> Counter[str]:
         """Count occurrences of each keyword in text.
 
         Args:
@@ -372,7 +380,16 @@ class KeywordExtractor(PatternExtractor):
                 )
             elif any(
                 indicator in context_before
-                for indicator in ["bad", "wrong", "incorrect", "✗", "❌", "don't", "avoid", "anti-pattern"]
+                for indicator in [
+                    "bad",
+                    "wrong",
+                    "incorrect",
+                    "✗",
+                    "❌",
+                    "don't",
+                    "avoid",
+                    "anti-pattern",
+                ]
             ):
                 bad_examples.append(
                     PatternExample(

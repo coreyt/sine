@@ -11,13 +11,11 @@ from sine.config import SineConfig
 from sine.rules_loader import load_all_rules
 from sine.runner import (
     format_findings_json,
-    format_findings_sarif,
     format_findings_text,
-    format_pattern_instances_json,
     format_pattern_instances_text,
     run_sine,
 )
-from sine.specs import load_rule_specs
+from sine.sarif import format_findings_sarif
 
 
 @click.group()
@@ -27,16 +25,16 @@ def cli(ctx):
     """Sine: Structural Governance Engine for code pattern enforcement."""
     # Load config
     config = SineConfig.load()
-    
+
     # Store config in context (though default_map is easier)
     ctx.ensure_object(dict)
     ctx.obj["config"] = config
-    
+
     # Set defaults for subcommands
-    # Note: Click's default_map expects keys to match command names if they are nested, 
+    # Note: Click's default_map expects keys to match command names if they are nested,
     # or parameter names if we are setting them directly.
     # Since we have flat commands, we map them directly.
-    
+
     ctx.default_map = {
         "check": {
             "rules_dir": config.rules_dir,
@@ -51,8 +49,8 @@ def cli(ctx):
         },
         "promote": {
             "patterns_dir": config.patterns_dir,
-            "output_dir": config.rules_dir, # Default output to rules_dir
-        }
+            "output_dir": config.rules_dir,  # Default output to rules_dir
+        },
     }
 
 
@@ -97,29 +95,25 @@ def check(
     fail_on_rule_error: bool,
 ):
     """Run structural governance checks on your codebase."""
-    # Note: Click injects defaults from default_map, so values shouldn't be None 
+    # Note: Click injects defaults from default_map, so values shouldn't be None
     # unless they are missing from config AND CLI. But we have Pydantic defaults.
     # However, targets coming from default_map might be a list, while CLI gives a tuple.
-    
+
     # If parameters are None, it means they weren't in config OR CLI (shouldn't happen with our setup).
     # But for safety:
-    
+
     config = click.get_current_context().obj["config"]
-    
+
     final_rules_dir = rules_dir or config.rules_dir
     final_format = format or config.format
     final_target = list(target) if target else config.target
-    final_fail_on_rule_error = fail_on_rule_error # Default map handles the config fallback
+    final_fail_on_rule_error = fail_on_rule_error  # Default map handles the config fallback
 
     # Load rule specifications (built-in + user rules)
-    specs = load_all_rules(
-        user_rules_dir=final_rules_dir if final_rules_dir.exists() else None
-    )
+    specs = load_all_rules(user_rules_dir=final_rules_dir if final_rules_dir.exists() else None)
 
     if not specs:
-        click.echo(
-            "No rule specifications found (neither built-in nor user rules)", err=True
-        )
+        click.echo("No rule specifications found (neither built-in nor user rules)", err=True)
         sys.exit(1)
 
     # Run the enforcement engine
@@ -192,9 +186,7 @@ def discover(rules_dir: Path | None, target: tuple[Path, ...], fail_on_rule_erro
     final_fail_on_rule_error = fail_on_rule_error
 
     # Load discovery specs (built-in + user rules)
-    specs = load_all_rules(
-        user_rules_dir=final_rules_dir if final_rules_dir.exists() else None
-    )
+    specs = load_all_rules(user_rules_dir=final_rules_dir if final_rules_dir.exists() else None)
 
     # Filter to only discovery specs
     discovery_specs = [s for s in specs if s.rule.check.type == "pattern_discovery"]
@@ -295,7 +287,9 @@ def promote(pattern_id: str, patterns_dir: Path | None, output_dir: Path | None)
     pattern = storage.load_pattern(pattern_id, stage="validated", model_class=ValidatedPattern)
 
     if not pattern:
-        click.echo(f"Error: Validated pattern {pattern_id} not found in {final_patterns_dir}", err=True)
+        click.echo(
+            f"Error: Validated pattern {pattern_id} not found in {final_patterns_dir}", err=True
+        )
         sys.exit(1)
 
     # Promote to spec

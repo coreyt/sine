@@ -20,13 +20,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 from datetime import datetime
 from enum import Enum
 from typing import Any
 
 import httpx
-import logging
 
 from sine.discovery.extractors.base import (
     ExtractionContext,
@@ -414,14 +414,8 @@ Extract 1-5 high-quality patterns from the content. Focus on actionable, specifi
             try:
                 # Build examples
                 examples = PatternExamples(
-                    good=[
-                        PatternExample(**ex)
-                        for ex in pattern_data.get("examples_good", [])
-                    ],
-                    bad=[
-                        PatternExample(**ex)
-                        for ex in pattern_data.get("examples_bad", [])
-                    ],
+                    good=[PatternExample(**ex) for ex in pattern_data.get("examples_good", [])],
+                    bad=[PatternExample(**ex) for ex in pattern_data.get("examples_bad", [])],
                 )
 
                 pattern = DiscoveredPattern(
@@ -472,9 +466,7 @@ Extract 1-5 high-quality patterns from the content. Focus on actionable, specifi
 
         # Average pattern confidences
         confidence_map = {"high": 1.0, "medium": 0.66, "low": 0.33}
-        avg_pattern_confidence = sum(
-            confidence_map[p.confidence] for p in patterns
-        ) / len(patterns)
+        avg_pattern_confidence = sum(confidence_map[p.confidence] for p in patterns) / len(patterns)
 
         return avg_pattern_confidence
 

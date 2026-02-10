@@ -144,9 +144,7 @@ class HybridExtractor(PatternExtractor):
         )
 
         # Merge results (deduplicate by pattern_id)
-        merged_patterns = self._merge_patterns(
-            keyword_result.patterns, llm_result.patterns
-        )
+        merged_patterns = self._merge_patterns(keyword_result.patterns, llm_result.patterns)
 
         # Calculate combined confidence (weighted average)
         combined_confidence = self._calculate_combined_confidence(
@@ -195,9 +193,7 @@ class HybridExtractor(PatternExtractor):
         merged = list(llm_patterns)
 
         # Get pattern ID prefixes from LLM patterns (e.g., "SEC-SQL", "ARCH-DI")
-        llm_prefixes = {
-            "-".join(p.pattern_id.split("-")[:2]) for p in llm_patterns
-        }
+        llm_prefixes = {"-".join(p.pattern_id.split("-")[:2]) for p in llm_patterns}
 
         # Add keyword patterns that don't overlap
         for kw_pattern in keyword_patterns:

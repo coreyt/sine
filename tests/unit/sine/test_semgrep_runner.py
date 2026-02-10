@@ -70,12 +70,16 @@ def test_run_sine_dry_run_returns_preview() -> None:
 
 
 def test_run_sine_update_baseline_writes_current_findings(monkeypatch) -> None:
-    fake_result = subprocess.CompletedProcess(args=["semgrep"], returncode=1, stdout='{"results":[]}', stderr="")
+    fake_result = subprocess.CompletedProcess(
+        args=["semgrep"], returncode=1, stdout='{"results":[]}', stderr=""
+    )
     findings = [_finding()]
     captured = {}
 
     monkeypatch.setattr("sine.runner.subprocess.run", lambda *args, **kwargs: fake_result)
-    monkeypatch.setattr("sine.runner.parse_semgrep_output", lambda *args, **kwargs: (findings, [], []))
+    monkeypatch.setattr(
+        "sine.runner.parse_semgrep_output", lambda *args, **kwargs: (findings, [], [])
+    )
     monkeypatch.setattr("sine.runner.load_baseline", lambda *args, **kwargs: None)
 
     def _capture_write(baseline: Baseline, path: Path) -> None:
@@ -100,13 +104,17 @@ def test_run_sine_update_baseline_writes_current_findings(monkeypatch) -> None:
 
 
 def test_run_sine_filters_existing_baseline(monkeypatch) -> None:
-    fake_result = subprocess.CompletedProcess(args=["semgrep"], returncode=1, stdout='{"results":[]}', stderr="")
+    fake_result = subprocess.CompletedProcess(
+        args=["semgrep"], returncode=1, stdout='{"results":[]}', stderr=""
+    )
     known = _finding("known")
     fresh = _finding("new")
     baseline = Baseline.from_findings([known])
 
     monkeypatch.setattr("sine.runner.subprocess.run", lambda *args, **kwargs: fake_result)
-    monkeypatch.setattr("sine.runner.parse_semgrep_output", lambda *args, **kwargs: ([known, fresh], [], []))
+    monkeypatch.setattr(
+        "sine.runner.parse_semgrep_output", lambda *args, **kwargs: ([known, fresh], [], [])
+    )
     monkeypatch.setattr("sine.runner.load_baseline", lambda *args, **kwargs: baseline)
 
     all_findings, new_findings, instances, errors, dry_output = run_sine(

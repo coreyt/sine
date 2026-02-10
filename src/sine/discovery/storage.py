@@ -387,9 +387,7 @@ class PatternStorage:
         """
         stage_dir = self._get_stage_dir(stage)
 
-        search_path = (
-            stage_dir / category / subcategory if subcategory else stage_dir / category
-        )
+        search_path = stage_dir / category / subcategory if subcategory else stage_dir / category
 
         if not search_path.exists():
             return []

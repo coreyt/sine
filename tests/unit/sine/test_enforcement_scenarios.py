@@ -35,7 +35,7 @@ def _create_di_rule() -> RuleSpecFile:
                         def __init__(self, ...):
                             ...
                             self.$FIELD = $CLASS(...)
-                """).strip()
+                """).strip(),
             ),
             reporting=RuleReporting(
                 default_message="Hardcoded dependency detected. Inject this dependency instead.",
@@ -54,7 +54,7 @@ def test_enforce_dependency_injection_violation():
             def __init__(self):
                 # VIOLATION: Hardcoded dependency
                 self.db = DatabaseConnection("localhost")
-                
+
             def get_user(self, id):
                 return self.db.query(id)
     """)
@@ -81,7 +81,7 @@ def test_enforce_dependency_injection_compliance():
             def __init__(self, db: DatabaseConnection):
                 # COMPLIANT: Injected dependency
                 self.db = db
-                
+
             def get_user(self, id):
                 return self.db.query(id)
     """)

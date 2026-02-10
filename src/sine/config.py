@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import Any
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -29,14 +28,14 @@ class SineConfig(BaseModel):
     # Core settings
     rules_dir: Path = Field(default=Path(".sine-rules"))
     target: list[Path] = Field(default_factory=lambda: [Path(".")])
-    
+
     # Output settings
     format: str = Field(default="text")
     fail_on_rule_error: bool = Field(default=False)
-    
+
     # Discovery settings
     patterns_dir: Path = Field(default=Path(".sine-patterns"))
-    
+
     # Integration settings
     repo: str | None = None
 
@@ -61,12 +60,12 @@ class SineConfig(BaseModel):
         try:
             with path.open("rb") as f:
                 data = tomllib.load(f)
-            
+
             if section:
                 # Traverse "tool.sine"
                 for key in section.split("."):
                     data = data.get(key, {})
-            
+
             # Handle Path conversion for specific fields if they exist as strings
             if "rules_dir" in data:
                 data["rules_dir"] = Path(data["rules_dir"])
@@ -74,7 +73,7 @@ class SineConfig(BaseModel):
                 data["patterns_dir"] = Path(data["patterns_dir"])
             if "target" in data and isinstance(data["target"], list):
                 data["target"] = [Path(t) for t in data["target"]]
-                
+
             return cls.model_validate(data)
         except Exception as e:
             logging.warning(f"Failed to load config from {path}: {e}")

@@ -28,9 +28,7 @@ class TestDetectProjectType:
 
         assert result["python"] is True
 
-    def test_detect_project_type_identifies_python_from_setup_py(
-        self, tmp_path, monkeypatch
-    ):
+    def test_detect_project_type_identifies_python_from_setup_py(self, tmp_path, monkeypatch):
         """Should detect Python project from setup.py."""
         project_dir = tmp_path / "python-project"
         project_dir.mkdir()

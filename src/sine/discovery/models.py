@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -28,13 +28,9 @@ class PatternExample(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    language: str = Field(
-        ..., description="Programming language (e.g., 'python', 'typescript')"
-    )
+    language: str = Field(..., description="Programming language (e.g., 'python', 'typescript')")
     code: str = Field(..., description="Code snippet")
-    description: str | None = Field(
-        default=None, description="Optional explanation of the example"
-    )
+    description: str | None = Field(default=None, description="Optional explanation of the example")
 
 
 class PatternExamples(BaseModel):
@@ -256,9 +252,7 @@ class SemgrepRule(BaseModel):
     rule_id: str = Field(..., description="Semgrep rule ID (derived from pattern_id)")
     language: str = Field(..., description="Target language")
     pattern: str | None = Field(default=None, description="Semgrep pattern")
-    patterns: list[dict[str, Any]] | None = Field(
-        default=None, description="Complex pattern logic"
-    )
+    patterns: list[dict[str, Any]] | None = Field(default=None, description="Complex pattern logic")
     message: str = Field(..., description="Message shown on violation")
     severity: Literal["ERROR", "WARNING", "INFO"]
     metadata: dict[str, Any] = Field(
@@ -274,12 +268,8 @@ class CompilationMetadata(BaseModel):
     compiled_at: datetime = Field(
         default_factory=datetime.now, description="When compilation occurred"
     )
-    compiler_version: str = Field(
-        default="1.0.0", description="Version of the compilation logic"
-    )
-    compilation_notes: str = Field(
-        default="", description="Notes about the compilation process"
-    )
+    compiler_version: str = Field(default="1.0.0", description="Version of the compilation logic")
+    compilation_notes: str = Field(default="", description="Notes about the compilation process")
 
 
 class CompiledPattern(BaseModel):

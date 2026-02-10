@@ -34,8 +34,7 @@ def promote_to_spec(pattern: ValidatedPattern) -> RuleSpecFile:
 
         check = RawCheck(
             type="raw",
-            config="# TODO: Implement Semgrep patterns for this rule
-rules: []",
+            config="# TODO: Implement Semgrep patterns for this rule\nrules: []",
             engine="semgrep",
         )
 
@@ -55,12 +54,8 @@ rules: []",
             documentation_url=discovered.references[0] if discovered.references else None,
         ),
         examples=RuleExamples(
-            good=[
-                {"language": ex.language, "code": ex.code} for ex in discovered.examples.good
-            ],
-            bad=[
-                {"language": ex.language, "code": ex.code} for ex in discovered.examples.bad
-            ],
+            good=[{"language": ex.language, "code": ex.code} for ex in discovered.examples.good],
+            bad=[{"language": ex.language, "code": ex.code} for ex in discovered.examples.bad],
         ),
         references=discovered.references,
     )

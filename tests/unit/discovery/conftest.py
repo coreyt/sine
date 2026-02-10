@@ -1,10 +1,12 @@
 import pytest
+
 from sine.discovery.models import (
     DiscoveredPattern,
     PatternExample,
     PatternExamples,
     ValidatedPattern,
 )
+
 
 @pytest.fixture
 def sample_discovered_pattern() -> DiscoveredPattern:
