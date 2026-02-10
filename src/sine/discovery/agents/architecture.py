@@ -187,7 +187,7 @@ class ArchitectureAgent:
             context = ExtractionContext(
                 source_url=result.url,
                 source_text=f"{result.title}\n\n{result.snippet}",
-                focus=focus.focus_type,
+                focus=focus,
                 metadata={
                     "credibility": str(result.credibility),
                     "rank": str(result.rank),
@@ -279,14 +279,11 @@ class ArchitectureAgent:
 
             # Filter by framework
             if constraints.frameworks:
-                # If pattern has frameworks, check for overlap
-                if pattern.frameworks:
-                    if not any(
-                        fw in constraints.frameworks
-                        for fw in pattern.frameworks
-                    ):
+                # If pattern has framework, check if it's in the allowed list
+                if pattern.framework:
+                    if pattern.framework not in constraints.frameworks:
                         continue
-                # If pattern has no frameworks, it's framework-agnostic (keep it)
+                # If pattern has no framework, it's framework-agnostic (keep it)
 
             # Filter by confidence
             confidence_levels = {"low": 1, "medium": 2, "high": 3}
@@ -333,11 +330,11 @@ class ArchitectureAgent:
                 if new_level > existing_level:
                     seen[pattern.pattern_id] = pattern
                 elif new_level == existing_level:
-                    # Compare credibility from metadata
+                    # Compare credibility from evidence
                     existing_cred = float(
-                        existing.metadata.get("credibility", "0.5")
+                        existing.evidence.get("credibility", "0.5")
                     )
-                    new_cred = float(pattern.metadata.get("credibility", "0.5"))
+                    new_cred = float(pattern.evidence.get("credibility", "0.5"))
 
                     if new_cred > existing_cred:
                         seen[pattern.pattern_id] = pattern

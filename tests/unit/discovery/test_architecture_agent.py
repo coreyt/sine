@@ -41,6 +41,7 @@ class TestArchitectureAgent:
     @pytest.fixture
     def sample_pattern(self):
         """Create a sample discovered pattern."""
+        from sine.discovery.models import PatternExamples, PatternExample
         return DiscoveredPattern(
             pattern_id="ARCH-DI-001",
             title="Use Dependency Injection for Loose Coupling",
@@ -48,20 +49,26 @@ class TestArchitectureAgent:
             subcategory="dependency-injection",
             description="Dependency injection is a design pattern that allows you to decouple your code by injecting dependencies rather than creating them directly.",
             rationale="This pattern improves testability, maintainability, and flexibility by allowing you to swap implementations without changing the dependent code.",
-            severity="recommended",
+            severity="info",
             confidence="high",
-            source_url="https://martinfowler.com/articles/dependency-injection.html",
             discovered_by="architecture-agent",
             languages=["python", "java", "typescript"],
-            frameworks=None,
             tags=["solid", "ioc", "testability"],
-            examples_good=[
-                "class UserService:\n    def __init__(self, repo: UserRepository):\n        self.repo = repo"
-            ],
-            examples_bad=[
-                "class UserService:\n    def __init__(self):\n        self.repo = UserRepository()"
-            ],
-            metadata={"credibility": "0.95", "rank": "1"},
+            examples=PatternExamples(
+                good=[
+                    PatternExample(
+                        language="python",
+                        code="class UserService:\n    def __init__(self, repo: UserRepository):\n        self.repo = repo"
+                    )
+                ],
+                bad=[
+                    PatternExample(
+                        language="python",
+                        code="class UserService:\n    def __init__(self):\n        self.repo = UserRepository()"
+                    )
+                ]
+            ),
+            evidence={"credibility": "0.95", "rank": "1"},
         )
 
     @pytest.mark.asyncio
@@ -136,50 +143,48 @@ class TestArchitectureAgent:
         self, mock_extractor, mock_search_client, sample_search_result
     ):
         """Test filtering patterns by language."""
+        from sine.discovery.models import PatternExamples
         # Create patterns with different languages
         python_pattern = DiscoveredPattern(
-            pattern_id="ARCH-001",
+            pattern_id="ARCH-DSGN-001",
             title="Python Pattern",
             category="architecture",
             subcategory="design-patterns",
             description="A pattern description that is long enough to pass validation requirements.",
             rationale="This pattern improves code quality and maintainability in Python projects.",
-            severity="recommended",
+            severity="info",
             confidence="high",
-            source_url="https://example.com",
             discovered_by="test",
             languages=["python"],
-            metadata={},
+            examples=PatternExamples(),
         )
 
         java_pattern = DiscoveredPattern(
-            pattern_id="ARCH-002",
+            pattern_id="ARCH-DSGN-002",
             title="Java Pattern",
             category="architecture",
             subcategory="design-patterns",
             description="A pattern description that is long enough to pass validation requirements.",
             rationale="This pattern improves code quality and maintainability in Java projects.",
-            severity="recommended",
+            severity="info",
             confidence="high",
-            source_url="https://example.com",
             discovered_by="test",
             languages=["java"],
-            metadata={},
+            examples=PatternExamples(),
         )
 
         agnostic_pattern = DiscoveredPattern(
-            pattern_id="ARCH-003",
+            pattern_id="ARCH-DSGN-003",
             title="Language-Agnostic Pattern",
             category="architecture",
             subcategory="design-patterns",
             description="A pattern description that is long enough to pass validation requirements.",
             rationale="This pattern improves code quality and maintainability in any language.",
-            severity="recommended",
+            severity="info",
             confidence="high",
-            source_url="https://example.com",
             discovered_by="test",
-            languages=None,  # Language-agnostic
-            metadata={},
+            languages=[],  # Language-agnostic
+            examples=PatternExamples(),
         )
 
         # Setup mocks
@@ -213,43 +218,42 @@ class TestArchitectureAgent:
         # Should include Python pattern and agnostic pattern
         assert len(patterns) == 2
         pattern_ids = {p.pattern_id for p in patterns}
-        assert "ARCH-001" in pattern_ids  # Python
-        assert "ARCH-003" in pattern_ids  # Agnostic
-        assert "ARCH-002" not in pattern_ids  # Java (filtered out)
+        assert "ARCH-DSGN-001" in pattern_ids  # Python
+        assert "ARCH-DSGN-003" in pattern_ids  # Agnostic
+        assert "ARCH-DSGN-002" not in pattern_ids  # Java (filtered out)
 
     @pytest.mark.asyncio
     async def test_filter_by_framework(
         self, mock_extractor, mock_search_client, sample_search_result
     ):
         """Test filtering patterns by framework."""
+        from sine.discovery.models import PatternExamples
         django_pattern = DiscoveredPattern(
-            pattern_id="ARCH-001",
+            pattern_id="ARCH-DSGN-001",
             title="Django Pattern",
             category="architecture",
             subcategory="design-patterns",
             description="A pattern description that is long enough to pass validation requirements.",
             rationale="This pattern improves code quality and maintainability in Django projects.",
-            severity="recommended",
+            severity="info",
             confidence="high",
-            source_url="https://example.com",
             discovered_by="test",
-            frameworks=["django"],
-            metadata={},
+            framework="django",
+            examples=PatternExamples(),
         )
 
         fastapi_pattern = DiscoveredPattern(
-            pattern_id="ARCH-002",
+            pattern_id="ARCH-DSGN-002",
             title="FastAPI Pattern",
             category="architecture",
             subcategory="design-patterns",
             description="A pattern description that is long enough to pass validation requirements.",
             rationale="This pattern improves code quality and maintainability in FastAPI projects.",
-            severity="recommended",
+            severity="info",
             confidence="high",
-            source_url="https://example.com",
             discovered_by="test",
-            frameworks=["fastapi"],
-            metadata={},
+            framework="fastapi",
+            examples=PatternExamples(),
         )
 
         # Setup mocks
@@ -282,53 +286,51 @@ class TestArchitectureAgent:
 
         # Should include only Django pattern
         assert len(patterns) == 1
-        assert patterns[0].pattern_id == "ARCH-001"
+        assert patterns[0].pattern_id == "ARCH-DSGN-001"
 
     @pytest.mark.asyncio
     async def test_filter_by_confidence(
         self, mock_extractor, mock_search_client, sample_search_result
     ):
         """Test filtering patterns by confidence level."""
+        from sine.discovery.models import PatternExamples
         high_pattern = DiscoveredPattern(
-            pattern_id="ARCH-001",
+            pattern_id="ARCH-DSGN-001",
             title="High Confidence Pattern",
             category="architecture",
             subcategory="design-patterns",
             description="A pattern description that is long enough to pass validation requirements.",
             rationale="This pattern improves code quality with high confidence evidence.",
-            severity="recommended",
+            severity="info",
             confidence="high",
-            source_url="https://example.com",
             discovered_by="test",
-            metadata={},
+            examples=PatternExamples(),
         )
 
         medium_pattern = DiscoveredPattern(
-            pattern_id="ARCH-002",
+            pattern_id="ARCH-DSGN-002",
             title="Medium Confidence Pattern",
             category="architecture",
             subcategory="design-patterns",
             description="A pattern description that is long enough to pass validation requirements.",
             rationale="This pattern improves code quality with medium confidence evidence.",
-            severity="recommended",
+            severity="info",
             confidence="medium",
-            source_url="https://example.com",
             discovered_by="test",
-            metadata={},
+            examples=PatternExamples(),
         )
 
         low_pattern = DiscoveredPattern(
-            pattern_id="ARCH-003",
+            pattern_id="ARCH-DSGN-003",
             title="Low Confidence Pattern",
             category="architecture",
             subcategory="design-patterns",
             description="A pattern description that is long enough to pass validation requirements.",
             rationale="This pattern improves code quality with low confidence evidence.",
-            severity="recommended",
+            severity="info",
             confidence="low",
-            source_url="https://example.com",
             discovered_by="test",
-            metadata={},
+            examples=PatternExamples(),
         )
 
         # Setup mocks
@@ -362,15 +364,16 @@ class TestArchitectureAgent:
         # Should include high and medium, exclude low
         assert len(patterns) == 2
         pattern_ids = {p.pattern_id for p in patterns}
-        assert "ARCH-001" in pattern_ids  # High
-        assert "ARCH-002" in pattern_ids  # Medium
-        assert "ARCH-003" not in pattern_ids  # Low (filtered out)
+        assert "ARCH-DSGN-001" in pattern_ids  # High
+        assert "ARCH-DSGN-002" in pattern_ids  # Medium
+        assert "ARCH-DSGN-003" not in pattern_ids  # Low (filtered out)
 
     @pytest.mark.asyncio
     async def test_deduplication(
         self, mock_extractor, mock_search_client, sample_search_result
     ):
         """Test that duplicate patterns are removed."""
+        from sine.discovery.models import PatternExamples
         # Two search results
         results = [sample_search_result, sample_search_result]
 
@@ -382,11 +385,11 @@ class TestArchitectureAgent:
             subcategory="dependency-injection",
             description="A pattern description that is long enough to pass validation requirements.",
             rationale="This pattern improves code quality and maintainability.",
-            severity="recommended",
+            severity="info",
             confidence="high",
-            source_url="https://example.com",
             discovered_by="test",
-            metadata={"credibility": "0.95"},
+            examples=PatternExamples(),
+            evidence={"credibility": "0.95"},
         )
 
         pattern2 = DiscoveredPattern(
@@ -396,11 +399,11 @@ class TestArchitectureAgent:
             subcategory="dependency-injection",
             description="A pattern description that is long enough to pass validation requirements.",
             rationale="This pattern improves code quality and maintainability.",
-            severity="recommended",
+            severity="info",
             confidence="medium",  # Lower confidence
-            source_url="https://example.com",
             discovered_by="test",
-            metadata={"credibility": "0.80"},
+            examples=PatternExamples(),
+            evidence={"credibility": "0.80"},
         )
 
         # Setup mocks
@@ -447,21 +450,21 @@ class TestArchitectureAgent:
         self, mock_extractor, mock_search_client, sample_search_result
     ):
         """Test that max_results is respected."""
+        from sine.discovery.models import PatternExamples
         # Create 5 different patterns
         patterns = []
         for i in range(5):
             pattern = DiscoveredPattern(
-                pattern_id=f"ARCH-{i:03d}",
+                pattern_id=f"ARCH-DSGN-{i:03d}",
                 title=f"Pattern {i}",
                 category="architecture",
                 subcategory="design-patterns",
                 description="A pattern description that is long enough to pass validation requirements.",
                 rationale="This pattern improves code quality and maintainability.",
-                severity="recommended",
+                severity="info",
                 confidence="high",
-                source_url="https://example.com",
                 discovered_by="test",
-                metadata={},
+                examples=PatternExamples(),
             )
             patterns.append(pattern)
 
