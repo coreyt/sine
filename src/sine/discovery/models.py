@@ -16,8 +16,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-if TYPE_CHECKING:
-    from sine.models import RuleCheck
+from sine.models import RuleCheck
 
 # ============================================================================
 # Pattern Examples
