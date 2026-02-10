@@ -7,7 +7,7 @@ name = "sine"
 version = "0.1.0"
 description = "Sine: Intelligent code pattern enforcement and discovery tool"
 readme = "README.md"
-license = "ELv2"
+license = {text = "Elastic License 2.0 (ELv2)"}
 requires-python = ">=3.10"
 authors = [
     { name = "Corey Taylor", email = "coreyt@users.noreply.github.com" }
