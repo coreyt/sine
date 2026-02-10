@@ -25,7 +25,7 @@ class Baseline:
     def from_findings(cls, findings: Iterable[Finding]) -> Baseline:
         return cls(entries={_entry_from_finding(finding) for finding in findings})
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         return {
             "version": 1,
             "violations": [

@@ -8,6 +8,7 @@ import yaml
 
 from sine.discovery.models import ValidatedPattern
 from sine.models import (
+    RuleExample,
     RuleExamples,
     RuleReporting,
     RuleSpec,
@@ -54,8 +55,10 @@ def promote_to_spec(pattern: ValidatedPattern) -> RuleSpecFile:
             documentation_url=discovered.references[0] if discovered.references else None,
         ),
         examples=RuleExamples(
-            good=[{"language": ex.language, "code": ex.code} for ex in discovered.examples.good],
-            bad=[{"language": ex.language, "code": ex.code} for ex in discovered.examples.bad],
+            good=[
+                RuleExample(language=ex.language, code=ex.code) for ex in discovered.examples.good
+            ],
+            bad=[RuleExample(language=ex.language, code=ex.code) for ex in discovered.examples.bad],
         ),
         references=discovered.references,
     )

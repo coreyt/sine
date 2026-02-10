@@ -8,6 +8,7 @@ from __future__ import annotations
 import shutil
 import sys
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -34,7 +35,7 @@ def detect_project_type() -> dict[str, bool]:
     }
 
 
-def prompt_user_config(project_info: dict[str, bool]) -> dict:
+def prompt_user_config(project_info: dict[str, bool]) -> dict[str, Any]:
     """Interactively prompt user for configuration preferences.
 
     Args:
@@ -46,7 +47,7 @@ def prompt_user_config(project_info: dict[str, bool]) -> dict:
         - target: List of directories to analyze
         - format: Output format ("text", "json", "sarif")
     """
-    config = {}
+    config: dict[str, Any] = {}
 
     # Ask about config file location
     if project_info["python"]:
@@ -62,7 +63,7 @@ def prompt_user_config(project_info: dict[str, bool]) -> dict:
         default=default_target,
         type=str,
     )
-    config["target"] = [t.strip() for t in target.split(",")]
+    config["target"] = [t.strip() for t in str(target).split(",")]
 
     # Ask about format
     config["format"] = click.prompt(
@@ -74,7 +75,7 @@ def prompt_user_config(project_info: dict[str, bool]) -> dict:
     return config
 
 
-def generate_config_content(config: dict, rules_dir: Path) -> str:
+def generate_config_content(config: dict[str, Any], rules_dir: Path) -> str:
     """Generate TOML configuration content.
 
     Args:

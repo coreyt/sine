@@ -104,7 +104,9 @@ class WebSearchClient:
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object
+    ) -> None:
         """Async context manager exit."""
         # Cleanup if needed
         pass
@@ -162,7 +164,7 @@ class WebSearchClient:
 
         self._last_request_time = datetime.now()
 
-    async def _execute_search(self, query: SearchQuery) -> list[dict]:
+    async def _execute_search(self, query: SearchQuery) -> list[dict[str, str]]:
         """Execute the actual web search.
 
         This is a placeholder that will be replaced with actual WebSearch
@@ -179,7 +181,7 @@ class WebSearchClient:
         logger.warning("WebSearch tool integration not yet implemented")
         return []
 
-    def _score_results(self, raw_results: list[dict]) -> list[SearchResult]:
+    def _score_results(self, raw_results: list[dict[str, str]]) -> list[SearchResult]:
         """Score search results by credibility and rank them.
 
         Args:

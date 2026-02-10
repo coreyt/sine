@@ -131,7 +131,9 @@ class PatternExtractor(ABC):
         """
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:  # noqa: B027
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object
+    ) -> None:  # noqa: B027
         """Exit async context manager.
 
         Subclasses can override to cleanup resources (close connections, etc.).

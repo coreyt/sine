@@ -87,7 +87,9 @@ class HybridExtractor(PatternExtractor):
         await self.llm_extractor.__aenter__()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object
+    ) -> None:
         """Cleanup LLM client."""
         await self.keyword_extractor.__aexit__(exc_type, exc_val, exc_tb)
         await self.llm_extractor.__aexit__(exc_type, exc_val, exc_tb)

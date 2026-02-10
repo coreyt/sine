@@ -108,7 +108,7 @@ class SourceCredibilityScorer:
         print(f"Credibility: {score}")  # 1.0
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the credibility scorer."""
         # Combine all domain mappings
         self.domain_scores = {

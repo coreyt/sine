@@ -223,7 +223,7 @@ class KeywordExtractor(PatternExtractor):
             result = await extractor.extract_patterns(context)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the keyword extractor."""
         self.templates = PATTERN_TEMPLATES
 

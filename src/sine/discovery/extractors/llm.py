@@ -142,7 +142,9 @@ class LLMExtractor(PatternExtractor):
         self._client = httpx.AsyncClient(timeout=60.0)
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object
+    ) -> None:
         """Cleanup HTTP client."""
         if self._client:
             await self._client.aclose()
@@ -298,13 +300,14 @@ Extract 1-5 high-quality patterns from the content. Focus on actionable, specifi
         """
         assert self._client is not None
 
+        headers: dict[str, str] = {
+            "x-api-key": self.api_key or "",
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
         response = await self._client.post(
             API_ENDPOINTS[LLMProvider.ANTHROPIC],
-            headers={
-                "x-api-key": self.api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
+            headers=headers,
             json={
                 "model": self.model,
                 "max_tokens": self.max_tokens,
@@ -313,7 +316,8 @@ Extract 1-5 high-quality patterns from the content. Focus on actionable, specifi
             },
         )
         response.raise_for_status()
-        return response.json()
+        result: dict[str, Any] = response.json()
+        return result
 
     async def _call_openai(self, prompt: str) -> dict[str, Any]:
         """Call OpenAI Chat Completions API.
@@ -341,7 +345,8 @@ Extract 1-5 high-quality patterns from the content. Focus on actionable, specifi
             },
         )
         response.raise_for_status()
-        return response.json()
+        result: dict[str, Any] = response.json()
+        return result
 
     async def _call_gemini(self, prompt: str) -> dict[str, Any]:
         """Call Google Gemini API.
@@ -367,7 +372,8 @@ Extract 1-5 high-quality patterns from the content. Focus on actionable, specifi
             },
         )
         response.raise_for_status()
-        return response.json()
+        result: dict[str, Any] = response.json()
+        return result
 
     def _parse_response(
         self, response_data: dict[str, Any], context: ExtractionContext

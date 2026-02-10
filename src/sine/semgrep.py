@@ -21,14 +21,14 @@ from sine.models import (
 )
 
 
-def str_presenter(dumper, data):
+def _str_presenter(dumper: yaml.BaseDumper, data: str) -> yaml.ScalarNode:
     if "\n" in data:
         return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
     return dumper.represent_scalar("tag:yaml.org,2002:str", data)
 
 
-yaml.add_representer(str, str_presenter)
-yaml.add_representer(str, str_presenter, Dumper=yaml.SafeDumper)
+yaml.add_representer(str, _str_presenter)  # type: ignore[arg-type]
+yaml.add_representer(str, _str_presenter, Dumper=yaml.SafeDumper)  # type: ignore[arg-type]
 
 
 def compile_semgrep_config(specs: list[RuleSpecFile]) -> dict[str, Any]:
@@ -41,7 +41,7 @@ def compile_semgrep_config(specs: list[RuleSpecFile]) -> dict[str, Any]:
             rules.extend(raw_config.get("rules", []))
             continue
 
-        compiled = {
+        compiled: dict[str, Any] = {
             "id": f"{rule.id.lower()}-impl",
             "languages": rule.languages,
             "severity": rule.severity.upper(),

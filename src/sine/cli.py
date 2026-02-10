@@ -21,7 +21,7 @@ from sine.sarif import format_findings_sarif
 @click.group()
 @click.version_option()
 @click.pass_context
-def cli(ctx):
+def cli(ctx: click.Context) -> None:
     """Sine: Structural Governance Engine for code pattern enforcement."""
     # Load config
     config = SineConfig.load()
@@ -93,7 +93,7 @@ def check(
     dry_run: bool,
     target: tuple[Path, ...],
     fail_on_rule_error: bool,
-):
+) -> None:
     """Run structural governance checks on your codebase."""
     # Note: Click injects defaults from default_map, so values shouldn't be None
     # unless they are missing from config AND CLI. But we have Pydantic defaults.
@@ -178,7 +178,7 @@ def check(
     is_flag=True,
     help="Exit with error if any rules fail to execute",
 )
-def discover(rules_dir: Path | None, target: tuple[Path, ...], fail_on_rule_error: bool):
+def discover(rules_dir: Path | None, target: tuple[Path, ...], fail_on_rule_error: bool) -> None:
     """Discover pattern instances in your codebase."""
     config = click.get_current_context().obj["config"]
     final_rules_dir = rules_dir or config.rules_dir
@@ -232,7 +232,7 @@ def discover(rules_dir: Path | None, target: tuple[Path, ...], fail_on_rule_erro
     is_flag=True,
     help="Skip interactive prompts and use defaults",
 )
-def init(rules_dir: Path, copy_built_in_rules: bool, non_interactive: bool):
+def init(rules_dir: Path, copy_built_in_rules: bool, non_interactive: bool) -> None:
     """Initialize Sine configuration for your project.
 
     Creates a configuration file (sine.toml or pyproject.toml) and sets up
@@ -271,7 +271,7 @@ def init(rules_dir: Path, copy_built_in_rules: bool, non_interactive: bool):
     type=click.Path(path_type=Path),
     help="Directory to save the promoted rule spec",
 )
-def promote(pattern_id: str, patterns_dir: Path | None, output_dir: Path | None):
+def promote(pattern_id: str, patterns_dir: Path | None, output_dir: Path | None) -> None:
     """Promote a validated pattern to an enforcement rule."""
     config = click.get_current_context().obj["config"]
     final_patterns_dir = patterns_dir or config.patterns_dir
