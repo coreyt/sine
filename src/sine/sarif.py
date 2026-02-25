@@ -27,7 +27,7 @@ def format_findings_sarif(findings: list[Finding], version: str = "0.1.0") -> st
                 "id": finding.guideline_id,
                 "shortDescription": {"text": finding.title},
                 "properties": {
-                    "category": "architecture",  # We should probably add this to Finding
+                    "category": finding.category,
                     "tier": finding.tier,
                 },
             }

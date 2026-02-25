@@ -31,12 +31,11 @@ def promote_to_spec(pattern: ValidatedPattern) -> RuleSpecFile:
     # or forbidden if there's a pattern string
     check = discovered.proposed_check
     if not check:
-        from sine.models import RawCheck
+        from sine.models import PatternDiscoveryCheck
 
-        check = RawCheck(
-            type="raw",
-            config="# TODO: Implement Semgrep patterns for this rule\nrules: []",
-            engine="semgrep",
+        check = PatternDiscoveryCheck(
+            type="pattern_discovery",
+            patterns=["..."],  # wildcard placeholder — replace with specific patterns
         )
 
     rule = RuleSpec(

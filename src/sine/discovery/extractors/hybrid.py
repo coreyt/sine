@@ -73,18 +73,23 @@ class HybridExtractor(PatternExtractor):
 
         # Initialize extractors
         self.keyword_extractor = KeywordExtractor()
-        self.llm_extractor = LLMExtractor(
-            provider=llm_provider,
-            model=llm_model,
-            api_key=llm_api_key,
-            temperature=llm_temperature,
-            max_tokens=llm_max_tokens,
-        )
+        try:
+            self.llm_extractor: LLMExtractor | None = LLMExtractor(
+                provider=llm_provider,
+                model=llm_model,
+                api_key=llm_api_key,
+                temperature=llm_temperature,
+                max_tokens=llm_max_tokens,
+            )
+        except ValueError:
+            logger.warning("LLM API key not available; HybridExtractor will use keyword-only mode")
+            self.llm_extractor = None
 
     async def __aenter__(self) -> HybridExtractor:
         """Initialize LLM client."""
         await self.keyword_extractor.__aenter__()
-        await self.llm_extractor.__aenter__()
+        if self.llm_extractor is not None:
+            await self.llm_extractor.__aenter__()
         return self
 
     async def __aexit__(
@@ -92,7 +97,8 @@ class HybridExtractor(PatternExtractor):
     ) -> None:
         """Cleanup LLM client."""
         await self.keyword_extractor.__aexit__(exc_type, exc_val, exc_tb)
-        await self.llm_extractor.__aexit__(exc_type, exc_val, exc_tb)
+        if self.llm_extractor is not None:
+            await self.llm_extractor.__aexit__(exc_type, exc_val, exc_tb)
 
     async def extract_patterns(self, context: ExtractionContext) -> ExtractionResult:
         """Extract patterns using hybrid approach.
@@ -119,7 +125,7 @@ class HybridExtractor(PatternExtractor):
         )
 
         # Check if we should run LLM stage
-        if keyword_result.confidence < self.min_keyword_confidence:
+        if self.llm_extractor is None or keyword_result.confidence < self.min_keyword_confidence:
             logger.debug(
                 f"Keyword confidence {keyword_result.confidence:.2f} below threshold "
                 f"{self.min_keyword_confidence}, skipping LLM stage"
@@ -254,4 +260,6 @@ class HybridExtractor(PatternExtractor):
             Estimated cost in USD
         """
         # Keyword stage is free, only estimate LLM cost
+        if self.llm_extractor is None:
+            return 0.0
         return self.llm_extractor.estimate_cost(context)

@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
+import os
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
+
+if TYPE_CHECKING:
+    from sine.discovery.models import DiscoveredPattern
 
 from sine.config import SineConfig
 from sine.rules_loader import load_all_rules
@@ -50,6 +56,12 @@ def cli(ctx: click.Context) -> None:
         "promote": {
             "patterns_dir": config.patterns_dir,
             "output_dir": config.rules_dir,  # Default output to rules_dir
+        },
+        "research": {
+            "patterns_dir": config.patterns_dir,
+        },
+        "validate": {
+            "patterns_dir": config.patterns_dir,
         },
     }
 
@@ -299,6 +311,206 @@ def promote(pattern_id: str, patterns_dir: Path | None, output_dir: Path | None)
     save_path = save_spec(spec, final_output_dir)
 
     click.echo(f"✓ Promoted {pattern_id} to {save_path}")
+
+
+@cli.command()
+@click.option(
+    "--focus",
+    required=True,
+    help="What patterns to look for (e.g. 'dependency injection patterns')",
+)
+@click.option(
+    "--category",
+    default="architecture",
+    help="Pattern category to search",
+)
+@click.option(
+    "--languages",
+    multiple=True,
+    help="Programming languages to filter by (can be repeated)",
+)
+@click.option(
+    "--provider",
+    default="anthropic",
+    help="LLM provider for extraction (anthropic, openai, gemini)",
+)
+@click.option(
+    "--patterns-dir",
+    type=click.Path(path_type=Path),
+    help="Directory to save discovered patterns",
+)
+@click.option(
+    "--max-results",
+    default=10,
+    help="Maximum number of patterns to discover",
+)
+@click.option(
+    "--no-llm",
+    is_flag=True,
+    help="Use keyword-only extraction (no LLM API key required)",
+)
+def research(
+    focus: str,
+    category: str,
+    languages: tuple[str, ...],
+    provider: str,
+    patterns_dir: Path | None,
+    max_results: int,
+    no_llm: bool,
+) -> None:
+    """Discover architectural patterns via AI-powered web research.
+
+    Searches trusted sources and extracts coding patterns, saving them
+    to the patterns directory for later validation and promotion.
+
+    Examples:
+
+        # Search with keyword-only extraction (no API key needed)
+        sine research --focus "dependency injection" --no-llm
+
+        # Search with LLM extraction (requires ANTHROPIC_API_KEY)
+        sine research --focus "error handling patterns" --languages python
+    """
+    config = click.get_current_context().obj["config"]
+    final_patterns_dir = patterns_dir or config.patterns_dir
+
+    patterns = asyncio.run(
+        _run_research(
+            focus=focus,
+            category=category,
+            languages=list(languages),
+            provider=provider,
+            no_llm=no_llm,
+            max_results=max_results,
+        )
+    )
+
+    if not patterns:
+        click.echo("No patterns discovered.")
+        return
+
+    from sine.discovery.storage import PatternStorage
+
+    storage = PatternStorage(final_patterns_dir)
+    for pattern in patterns:
+        storage.save_pattern(pattern, "raw")
+
+    click.echo(f"✓ {len(patterns)} patterns saved to {final_patterns_dir}/raw/")
+
+
+async def _run_research(
+    focus: str,
+    category: str,
+    languages: list[str],
+    provider: str,
+    no_llm: bool,
+    max_results: int,
+) -> list[DiscoveredPattern]:
+    """Async helper that runs the discovery pipeline."""
+    from sine.discovery.agents.architecture import ArchitectureAgent
+    from sine.discovery.agents.base import SearchConstraints, SearchFocus
+    from sine.discovery.search.credibility import SourceCredibilityScorer
+    from sine.discovery.search.web_search import WebSearchClient
+
+    scorer = SourceCredibilityScorer()
+
+    if no_llm:
+        from sine.discovery.extractors.keyword import KeywordExtractor
+
+        extractor_ctx: object = KeywordExtractor()
+    else:
+        from sine.discovery.extractors.hybrid import HybridExtractor
+        from sine.discovery.extractors.llm import LLMProvider
+
+        extractor_ctx = HybridExtractor(llm_provider=LLMProvider(provider))
+
+    from sine.discovery.extractors.base import PatternExtractor
+
+    async with (  # noqa: SIM117
+        WebSearchClient(scorer) as search_client,
+        extractor_ctx as extractor,  # type: ignore[attr-defined]
+    ):
+        assert isinstance(extractor, PatternExtractor)
+        agent = ArchitectureAgent(extractor=extractor, search_client=search_client)
+
+        focus_obj = SearchFocus(
+            focus_type=category,
+            description=focus,
+            keywords=[focus],
+        )
+        constraints = SearchConstraints(
+            languages=languages,
+            max_results=max_results,
+        )
+
+        return await agent.discover_patterns(focus_obj, constraints)
+
+
+@cli.command()
+@click.argument("pattern-id")
+@click.option(
+    "--patterns-dir",
+    type=click.Path(path_type=Path),
+    help="Directory containing discovered patterns",
+)
+@click.option(
+    "--notes",
+    default="",
+    help="Review notes to attach to the validated pattern",
+)
+@click.option(
+    "--tier",
+    type=click.IntRange(1, 3),
+    default=None,
+    help="Override the inferred tier (1=Non-Negotiable, 2=Strong Recommendation, 3=Contextual)",
+)
+def validate(
+    pattern_id: str,
+    patterns_dir: Path | None,
+    notes: str,
+    tier: int | None,
+) -> None:
+    """Validate a discovered pattern and promote it to the validated stage.
+
+    Loads a raw pattern from the patterns directory, attaches validation
+    metadata, and saves it to the validated stage for later promotion.
+
+    Examples:
+
+        sine validate ARCH-DI-001
+        sine validate ARCH-DI-001 --tier 1 --notes "Confirmed by team review"
+    """
+    config = click.get_current_context().obj["config"]
+    final_patterns_dir = patterns_dir or config.patterns_dir
+
+    from sine.discovery.models import DiscoveredPattern, ValidatedPattern
+    from sine.discovery.storage import PatternStorage
+
+    storage = PatternStorage(final_patterns_dir)
+
+    raw = storage.load_pattern(pattern_id, stage="raw", model_class=DiscoveredPattern)
+
+    if not raw:
+        click.echo(
+            f"Error: Raw pattern {pattern_id} not found in {final_patterns_dir}",
+            err=True,
+        )
+        sys.exit(1)
+
+    validated_by = os.getenv("USER", "unknown")
+    validated = ValidatedPattern.from_discovered(
+        raw,
+        validated_by=validated_by,
+        review_notes=notes,
+        tier_override=tier,
+    )
+
+    storage.save_pattern(validated, "validated")
+
+    click.echo(
+        f"✓ Validated {pattern_id} (tier {validated.effective_tier})"
+        f" — run 'sine promote {pattern_id}' to create enforcement rule"
+    )
 
 
 if __name__ == "__main__":

@@ -124,15 +124,18 @@ class ArchitectureAgent:
         self,
         extractor: PatternExtractor,
         search_client: WebSearchClient | None = None,
+        fetch_full_content: bool = False,
     ):
         """Initialize the architecture agent.
 
         Args:
             extractor: Pattern extractor for analyzing content
             search_client: Web search client (optional for testing)
+            fetch_full_content: Whether to fetch full page text for each result
         """
         self.extractor = extractor
         self.search_client = search_client
+        self.fetch_full_content = fetch_full_content
 
     async def discover_patterns(
         self,
@@ -175,13 +178,17 @@ class ArchitectureAgent:
         all_patterns: list[DiscoveredPattern] = []
 
         for result in search_results:
-            # TODO: Fetch full content from URL (using WebFetch tool)
-            # For now, we'll extract from snippet only
             from sine.discovery.extractors.base import ExtractionContext
+
+            if self.fetch_full_content:
+                page_text = await self._fetch_page_text(result.url)
+                source_text = page_text if page_text else f"{result.title}\n\n{result.snippet}"
+            else:
+                source_text = f"{result.title}\n\n{result.snippet}"
 
             context = ExtractionContext(
                 source_url=result.url,
-                source_text=f"{result.title}\n\n{result.snippet}",
+                source_text=source_text,
                 focus=focus,
                 metadata={
                     "credibility": str(result.credibility),
@@ -206,6 +213,42 @@ class ArchitectureAgent:
 
         # Limit to max_results
         return deduplicated[: constraints.max_results]
+
+    async def _fetch_page_text(self, url: str) -> str:
+        """Fetch full text content from a URL.
+
+        Uses BeautifulSoup4 to extract readable text, stripping script/style tags.
+
+        Args:
+            url: URL to fetch
+
+        Returns:
+            Extracted text content, or empty string on failure
+        """
+        import httpx
+        from bs4 import BeautifulSoup
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                response = await client.get(
+                    url,
+                    headers={"User-Agent": "sine/0.1.0 pattern-discovery"},
+                )
+                response.raise_for_status()
+        except httpx.RequestError as exc:
+            logger.warning(f"Failed to fetch {url}: {exc}")
+            return ""
+        except httpx.HTTPStatusError as exc:
+            logger.warning(f"HTTP {exc.response.status_code} fetching {url}")
+            return ""
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Remove script and style elements
+        for tag in soup(["script", "style"]):
+            tag.decompose()
+
+        return soup.get_text(separator="\n", strip=True)
 
     def _build_search_query(
         self,

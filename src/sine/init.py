@@ -200,9 +200,12 @@ def run_init(
             if copy_all:
                 copy_built_in_rules_to_local(rules_dir)
             else:
-                # TODO: Allow selecting specific rules
-                click.echo("Selective rule copying not yet implemented. Copying all.")
-                copy_built_in_rules_to_local(rules_dir)
+                id_input = click.prompt(
+                    "Enter rule IDs to copy (comma-separated), or press Enter for all",
+                    default="",
+                )
+                selected = [i.strip() for i in id_input.split(",") if i.strip()] or None
+                copy_built_in_rules_to_local(rules_dir, selected_ids=selected)
         else:
             copy_built_in_rules_to_local(rules_dir)
 

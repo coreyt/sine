@@ -347,6 +347,40 @@ class TestHybridExtractor:
             assert result.metadata["llm_token_usage"]["output_tokens"] == 200
             assert result.metadata["llm_provider"] == "anthropic"
 
+    def test_init_without_api_key_does_not_raise(self, monkeypatch) -> None:
+        """HybridExtractor should not raise when no API key is available."""
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+        # Should not raise ValueError
+        extractor = HybridExtractor(llm_api_key=None)
+        assert extractor.llm_extractor is None
+
+    @pytest.mark.asyncio
+    async def test_extract_keyword_only_when_no_llm(
+        self, sample_context, monkeypatch, sample_discovered_pattern
+    ) -> None:
+        """When no LLM is available, extraction should succeed with keyword-only method."""
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+
+        async with HybridExtractor(llm_api_key=None) as extractor:
+            assert extractor.llm_extractor is None
+
+            keyword_result = ExtractionResult(
+                patterns=[sample_discovered_pattern],
+                confidence=0.5,
+                method="keyword",
+                metadata={},
+            )
+            extractor.keyword_extractor.extract_patterns = AsyncMock(return_value=keyword_result)
+
+            result = await extractor.extract_patterns(sample_context)
+
+        assert result.method == "hybrid-keyword-only"
+        assert result.metadata["llm_skipped"] is True
+
     @pytest.mark.asyncio
     async def test_no_patterns_returns_zero_confidence(self, sample_context):
         """Test handling when no patterns are found."""

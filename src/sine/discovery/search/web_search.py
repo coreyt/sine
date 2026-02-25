@@ -165,21 +165,56 @@ class WebSearchClient:
         self._last_request_time = datetime.now()
 
     async def _execute_search(self, query: SearchQuery) -> list[dict[str, str]]:
-        """Execute the actual web search.
-
-        This is a placeholder that will be replaced with actual WebSearch
-        tool integration or mocked in tests.
+        """Execute web search via DuckDuckGo HTML endpoint.
 
         Args:
             query: Search query
 
         Returns:
-            Raw search results
+            Raw search results as list of dicts with url, title, snippet
         """
-        # This will be implemented to call the WebSearch tool
-        # For now, return empty list (will be overridden in tests)
-        logger.warning("WebSearch tool integration not yet implemented")
-        return []
+        import httpx
+        from bs4 import BeautifulSoup
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                response = await client.post(
+                    "https://html.duckduckgo.com/html/",
+                    data={"q": query.query},
+                    headers={"User-Agent": "sine/0.1.0 pattern-discovery"},
+                )
+                response.raise_for_status()
+        except httpx.RequestError as exc:
+            logger.warning(f"Web search request failed: {exc}")
+            return []
+        except httpx.HTTPStatusError as exc:
+            logger.warning(f"Web search returned {exc.response.status_code}")
+            return []
+
+        soup = BeautifulSoup(response.text, "html.parser")
+        results: list[dict[str, str]] = []
+
+        for element in soup.select(".web-result"):
+            title_el = element.select_one(".result__title")
+            url_el = element.select_one(".result__url")
+            snippet_el = element.select_one(".result__snippet")
+            if not (title_el and url_el):
+                continue
+            url = url_el.get_text(strip=True)
+            # Filter by allowed domains if specified
+            if query.allowed_domains and not any(domain in url for domain in query.allowed_domains):
+                continue
+            results.append(
+                {
+                    "url": url,
+                    "title": title_el.get_text(strip=True),
+                    "snippet": snippet_el.get_text(strip=True) if snippet_el else "",
+                }
+            )
+            if len(results) >= query.max_results:
+                break
+
+        return results
 
     def _score_results(self, raw_results: list[dict[str, str]]) -> list[SearchResult]:
         """Score search results by credibility and rank them.

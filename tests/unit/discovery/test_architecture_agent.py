@@ -548,3 +548,149 @@ class TestArchitectureAgent:
         assert len(search_query.allowed_domains) > 0
         assert "martinfowler.com" in search_query.allowed_domains
         assert "refactoring.guru" in search_query.allowed_domains
+
+
+class TestFetchFullContent:
+    """Tests for ArchitectureAgent fetch_full_content feature."""
+
+    @pytest.fixture
+    def mock_extractor(self):
+        return Mock()
+
+    @pytest.fixture
+    def mock_search_client(self):
+        return Mock()
+
+    @pytest.fixture
+    def sample_search_result(self):
+        return SearchResult(
+            url="https://martinfowler.com/articles/di.html",
+            title="Dependency Injection",
+            snippet="DI is a design pattern...",
+            credibility=0.95,
+            rank=1,
+        )
+
+    @pytest.mark.asyncio
+    async def test_fetch_full_content_enabled(
+        self, mock_extractor, mock_search_client, sample_search_result, monkeypatch
+    ):
+        """When fetch_full_content=True, extractor receives full page text."""
+        from unittest.mock import AsyncMock, MagicMock, Mock
+
+        full_page_html = (
+            "<html><body><p>Full article content about dependency injection patterns "
+            "with extensive detail about how to apply the pattern in practice.</p></body></html>"
+        )
+
+        mock_response = MagicMock()
+        mock_response.text = full_page_html
+        mock_response.raise_for_status = Mock()
+
+        mock_http_client = AsyncMock()
+        mock_http_client.get = AsyncMock(return_value=mock_response)
+        mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
+        mock_http_client.__aexit__ = AsyncMock(return_value=None)
+
+        monkeypatch.setattr("httpx.AsyncClient", Mock(return_value=mock_http_client))
+
+        # Capture contexts passed to extractor
+        captured_contexts = []
+
+        async def mock_extract(context):  # type: ignore[no-untyped-def]
+            captured_contexts.append(context)
+            return ExtractionResult(patterns=[], confidence=0.0, method="hybrid")
+
+        mock_extractor.extract_patterns = AsyncMock(side_effect=mock_extract)
+        mock_search_client.search = AsyncMock(return_value=[sample_search_result])
+
+        agent = ArchitectureAgent(
+            extractor=mock_extractor,
+            search_client=mock_search_client,
+            fetch_full_content=True,
+        )
+
+        focus = SearchFocus(focus_type="architecture", description="Find DI patterns")
+        constraints = SearchConstraints(max_results=10)
+        await agent.discover_patterns(focus, constraints)
+
+        assert len(captured_contexts) == 1
+        # Full page text should be longer than just snippet
+        assert len(captured_contexts[0].source_text) > len(sample_search_result.snippet)
+
+    @pytest.mark.asyncio
+    async def test_fetch_full_content_graceful_failure(
+        self, mock_extractor, mock_search_client, sample_search_result, monkeypatch
+    ):
+        """When page fetch fails, falls back to snippet — no exception raised."""
+        import httpx
+        from unittest.mock import AsyncMock, Mock
+
+        mock_http_client = AsyncMock()
+        mock_http_client.get = AsyncMock(side_effect=httpx.ConnectError("timeout"))
+        mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
+        mock_http_client.__aexit__ = AsyncMock(return_value=None)
+
+        monkeypatch.setattr("httpx.AsyncClient", Mock(return_value=mock_http_client))
+
+        captured_contexts = []
+
+        async def mock_extract(context):  # type: ignore[no-untyped-def]
+            captured_contexts.append(context)
+            return ExtractionResult(patterns=[], confidence=0.0, method="hybrid")
+
+        mock_extractor.extract_patterns = AsyncMock(side_effect=mock_extract)
+        mock_search_client.search = AsyncMock(return_value=[sample_search_result])
+
+        agent = ArchitectureAgent(
+            extractor=mock_extractor,
+            search_client=mock_search_client,
+            fetch_full_content=True,
+        )
+
+        focus = SearchFocus(focus_type="architecture", description="Find DI patterns")
+        constraints = SearchConstraints(max_results=10)
+        # Should not raise
+        await agent.discover_patterns(focus, constraints)
+
+        assert len(captured_contexts) == 1
+        # Falls back to title + snippet
+        assert sample_search_result.snippet in captured_contexts[0].source_text
+
+    @pytest.mark.asyncio
+    async def test_fetch_full_content_disabled_by_default(
+        self, mock_extractor, mock_search_client, sample_search_result, monkeypatch
+    ):
+        """When fetch_full_content=False (default), no HTTP GET calls are made."""
+        import httpx
+        from unittest.mock import AsyncMock, Mock
+
+        get_called = []
+
+        async def mock_get(*args, **kwargs):  # type: ignore[no-untyped-def]
+            get_called.append(args)
+
+        mock_http_client = AsyncMock()
+        mock_http_client.get = AsyncMock(side_effect=mock_get)
+        mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
+        mock_http_client.__aexit__ = AsyncMock(return_value=None)
+
+        monkeypatch.setattr("httpx.AsyncClient", Mock(return_value=mock_http_client))
+
+        mock_extractor.extract_patterns = AsyncMock(
+            return_value=ExtractionResult(patterns=[], confidence=0.0, method="hybrid")
+        )
+        mock_search_client.search = AsyncMock(return_value=[sample_search_result])
+
+        agent = ArchitectureAgent(
+            extractor=mock_extractor,
+            search_client=mock_search_client,
+            # fetch_full_content defaults to False
+        )
+
+        focus = SearchFocus(focus_type="architecture", description="Find DI patterns")
+        constraints = SearchConstraints(max_results=10)
+        await agent.discover_patterns(focus, constraints)
+
+        # No GET requests should have been made
+        assert len(get_called) == 0
