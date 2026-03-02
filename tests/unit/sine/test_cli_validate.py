@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 from click.testing import CliRunner
 
 from sine.cli import cli
@@ -58,7 +57,7 @@ class TestValidateCommand:
         mock_storage_cls = MagicMock(return_value=mock_storage)
         monkeypatch.setattr("sine.discovery.storage.PatternStorage", mock_storage_cls)
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         with runner.isolated_filesystem():
             Path(".sine-patterns").mkdir()
             result = runner.invoke(

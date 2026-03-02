@@ -18,7 +18,7 @@ def test_check_continues_on_rule_error_by_default(monkeypatch):
     # Mock load_rule_specs to return something so we don't fail early
     monkeypatch.setattr("sine.cli.load_all_rules", lambda user_rules_dir: [Mock()])
 
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     with runner.isolated_filesystem():
         Path("rules").mkdir()
         result = runner.invoke(cli, ["check", "--rules-dir", "rules"])
@@ -33,7 +33,7 @@ def test_check_fails_on_rule_error_with_flag(monkeypatch):
     monkeypatch.setattr("sine.cli.run_sine", lambda **kwargs: ([], [], [], errors, None))
     monkeypatch.setattr("sine.cli.load_all_rules", lambda user_rules_dir: [Mock()])
 
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     with runner.isolated_filesystem():
         Path("rules").mkdir()
         # Pass --fail-on-rule-error
