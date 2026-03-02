@@ -4,11 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 import yaml
 
-from sine.discovery.models import DiscoveredPattern, PatternExamples, PatternExample, ValidatedPattern
-from sine.models import ForbiddenCheck, PatternDiscoveryCheck, RawCheck
+from sine.discovery.models import (
+    DiscoveredPattern,
+    PatternExample,
+    PatternExamples,
+    ValidatedPattern,
+)
+from sine.models import ForbiddenCheck, PatternDiscoveryCheck
 from sine.promotion import promote_to_spec, save_spec
 
 
@@ -113,8 +117,12 @@ class TestPromoteToSpec:
         assert result.rule.tier == 2
 
     def test_examples_are_mapped(self) -> None:
-        good = PatternExample(language="python", code="class A:\n    def __init__(self, dep): self.dep = dep")
-        bad = PatternExample(language="python", code="class A:\n    def __init__(self): self.dep = Dep()")
+        good = PatternExample(
+            language="python", code="class A:\n    def __init__(self, dep): self.dep = dep"
+        )
+        bad = PatternExample(
+            language="python", code="class A:\n    def __init__(self): self.dep = Dep()"
+        )
         pattern = _discovered(good_examples=[good], bad_examples=[bad])
         validated = ValidatedPattern.from_discovered(pattern, validated_by="reviewer")
         result = promote_to_spec(validated)
@@ -178,3 +186,28 @@ class TestSaveSpec:
         result_path = save_spec(spec, tmp_path)
 
         assert result_path.name == "SEC-XSS-001.yaml"
+
+
+class TestPromoteToSpecCheckOverride:
+    """Tests for the check_override parameter in promote_to_spec."""
+
+    def test_check_override_beats_proposed_check(self) -> None:
+        proposed = ForbiddenCheck(type="forbidden", pattern="OldPattern()")
+        override = ForbiddenCheck(type="forbidden", pattern="NewPattern()")
+        result = promote_to_spec(_validated(proposed_check=proposed), check_override=override)
+        assert result.rule.check == override
+
+    def test_check_override_beats_fallback(self) -> None:
+        override = ForbiddenCheck(type="forbidden", pattern="Override()")
+        result = promote_to_spec(_validated(proposed_check=None), check_override=override)
+        assert result.rule.check == override
+
+    def test_none_override_falls_through_to_proposed_check(self) -> None:
+        proposed = ForbiddenCheck(type="forbidden", pattern="Proposed()")
+        result = promote_to_spec(_validated(proposed_check=proposed), check_override=None)
+        assert result.rule.check == proposed
+
+    def test_none_override_no_proposed_falls_to_placeholder(self) -> None:
+        result = promote_to_spec(_validated(proposed_check=None), check_override=None)
+        assert isinstance(result.rule.check, PatternDiscoveryCheck)
+        assert "..." in result.rule.check.patterns

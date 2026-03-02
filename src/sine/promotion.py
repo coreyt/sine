@@ -8,6 +8,7 @@ import yaml
 
 from sine.discovery.models import ValidatedPattern
 from sine.models import (
+    RuleCheck,
     RuleExample,
     RuleExamples,
     RuleReporting,
@@ -16,20 +17,23 @@ from sine.models import (
 )
 
 
-def promote_to_spec(pattern: ValidatedPattern) -> RuleSpecFile:
+def promote_to_spec(
+    pattern: ValidatedPattern,
+    check_override: RuleCheck | None = None,
+) -> RuleSpecFile:
     """Convert a validated pattern into a Sine rule specification.
 
     Args:
         pattern: The validated pattern to promote
+        check_override: Optional check to use instead of the pattern's proposed_check
 
     Returns:
         A RuleSpecFile instance
     """
     discovered = pattern.discovered
 
-    # If the agent didn't propose a check, we default to raw (placeholder)
-    # or forbidden if there's a pattern string
-    check = discovered.proposed_check
+    # Use override first, then proposed_check, then fallback placeholder
+    check = check_override or discovered.proposed_check
     if not check:
         from sine.models import PatternDiscoveryCheck
 

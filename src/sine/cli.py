@@ -11,7 +11,8 @@ from typing import TYPE_CHECKING
 import click
 
 if TYPE_CHECKING:
-    from sine.discovery.models import DiscoveredPattern
+    from sine.discovery.models import DiscoveredPattern, ValidatedPattern
+    from sine.models import RuleCheck
 
 from sine.config import SineConfig
 from sine.rules_loader import load_all_rules
@@ -283,7 +284,23 @@ def init(rules_dir: Path, copy_built_in_rules: bool, non_interactive: bool) -> N
     type=click.Path(path_type=Path),
     help="Directory to save the promoted rule spec",
 )
-def promote(pattern_id: str, patterns_dir: Path | None, output_dir: Path | None) -> None:
+@click.option(
+    "--generate-check",
+    is_flag=True,
+    help="Use LLM to generate an enforcement check from the pattern",
+)
+@click.option(
+    "--provider",
+    default="anthropic",
+    help="LLM provider for check generation (anthropic, openai, gemini)",
+)
+def promote(
+    pattern_id: str,
+    patterns_dir: Path | None,
+    output_dir: Path | None,
+    generate_check: bool,
+    provider: str,
+) -> None:
     """Promote a validated pattern to an enforcement rule."""
     config = click.get_current_context().obj["config"]
     final_patterns_dir = patterns_dir or config.patterns_dir
@@ -304,13 +321,44 @@ def promote(pattern_id: str, patterns_dir: Path | None, output_dir: Path | None)
         )
         sys.exit(1)
 
+    # Optionally generate a check via LLM
+    check_override = None
+    if generate_check:
+        check_override = asyncio.run(_generate_check(pattern, provider))
+        if check_override:
+            import json
+
+            check_json = check_override.model_dump(mode="json")
+            click.echo(f"Generated check: {json.dumps(check_json, indent=2)}", err=True)
+        else:
+            click.echo("Warning: Check generation failed, using placeholder", err=True)
+
     # Promote to spec
-    spec = promote_to_spec(pattern)
+    spec = promote_to_spec(pattern, check_override=check_override)
 
     # Save to rules directory
     save_path = save_spec(spec, final_output_dir)
 
     click.echo(f"✓ Promoted {pattern_id} to {save_path}")
+
+
+async def _generate_check(
+    pattern: ValidatedPattern,
+    provider: str,
+) -> RuleCheck | None:
+    """Generate a RuleCheck using the LLM rule generator.
+
+    Returns None on any failure (missing API key, network error, parse failure).
+    """
+    from sine.discovery.extractors.llm import LLMProvider
+    from sine.rule_generator import RuleGenerator
+
+    try:
+        async with RuleGenerator(provider=LLMProvider(provider)) as gen:
+            return await gen.generate_check(pattern)
+    except Exception as e:
+        click.echo(f"Warning: {e}", err=True)
+        return None
 
 
 @cli.command()
