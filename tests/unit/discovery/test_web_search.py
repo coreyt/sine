@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from sine.discovery.search.credibility import SourceCredibilityScorer
-from sine.discovery.search.web_search import (
+from lookout.discovery.search.credibility import SourceCredibilityScorer
+from lookout.discovery.search.web_search import (
     SearchQuery,
     SearchResult,
     WebSearchClient,
@@ -296,23 +296,8 @@ class TestWebSearchClient:
         # Context should exit cleanly (no errors)
 
 
-class TestExecuteSearch:
-    """Tests for the real _execute_search implementation (DuckDuckGo)."""
-
-    FAKE_DDG_HTML = """
-    <html><body>
-    <div class="web-result">
-        <a class="result__title">Dependency Injection Guide</a>
-        <span class="result__url">martinfowler.com/articles/di</span>
-        <a class="result__snippet">A comprehensive guide to dependency injection patterns.</a>
-    </div>
-    <div class="web-result">
-        <a class="result__title">Python DI Tutorial</a>
-        <span class="result__url">realpython.com/python-di</span>
-        <a class="result__snippet">Learn dependency injection in Python step by step.</a>
-    </div>
-    </body></html>
-    """
+class TestProviderDelegation:
+    """Tests for _execute_search delegating to SearchProvider."""
 
     @pytest.fixture
     def mock_scorer(self):
@@ -321,118 +306,91 @@ class TestExecuteSearch:
         return scorer
 
     @pytest.mark.asyncio
-    async def test_execute_search_parses_results(self, mock_scorer, monkeypatch):
-        """_execute_search parses DuckDuckGo HTML into result dicts."""
-        mock_response = Mock()
-        mock_response.text = self.FAKE_DDG_HTML
-        mock_response.raise_for_status = Mock()
+    async def test_delegates_to_provider(self, mock_scorer):
+        """_execute_search forwards query to the search provider."""
+        mock_provider = AsyncMock()
+        mock_provider.execute_search = AsyncMock(
+            return_value=[{"url": "https://example.com", "title": "Example", "snippet": "text"}]
+        )
+        mock_provider.close = AsyncMock()
 
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
-
-        monkeypatch.setattr("httpx.AsyncClient", Mock(return_value=mock_client))
-
-        async with WebSearchClient(mock_scorer, rate_limit_seconds=0.0) as client:
-            query = SearchQuery(query="dependency injection", focus_type="architecture", max_results=10)
-            results = await client._execute_search(query)
-
-        assert len(results) == 2
-        assert results[0]["title"] == "Dependency Injection Guide"
-        assert "martinfowler.com" in results[0]["url"]
-        assert results[0]["snippet"] != ""
-
-    @pytest.mark.asyncio
-    async def test_execute_search_respects_max_results(self, mock_scorer, monkeypatch):
-        """_execute_search returns at most max_results items."""
-        many_results = ""
-        for i in range(15):
-            many_results += f"""
-            <div class="web-result">
-                <a class="result__title">Title {i}</a>
-                <span class="result__url">example{i}.com/page</span>
-                <a class="result__snippet">Snippet {i}</a>
-            </div>"""
-        html = f"<html><body>{many_results}</body></html>"
-
-        mock_response = Mock()
-        mock_response.text = html
-        mock_response.raise_for_status = Mock()
-
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
-
-        monkeypatch.setattr("httpx.AsyncClient", Mock(return_value=mock_client))
-
-        async with WebSearchClient(mock_scorer, rate_limit_seconds=0.0) as client:
-            query = SearchQuery(query="test", focus_type="architecture", max_results=5)
-            results = await client._execute_search(query)
-
-        assert len(results) <= 5
-
-    @pytest.mark.asyncio
-    async def test_execute_search_filters_by_allowed_domains(self, mock_scorer, monkeypatch):
-        """_execute_search excludes results not in allowed_domains."""
-        mock_response = Mock()
-        mock_response.text = self.FAKE_DDG_HTML
-        mock_response.raise_for_status = Mock()
-
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
-
-        monkeypatch.setattr("httpx.AsyncClient", Mock(return_value=mock_client))
-
-        async with WebSearchClient(mock_scorer, rate_limit_seconds=0.0) as client:
-            query = SearchQuery(
-                query="dependency injection",
-                focus_type="architecture",
-                max_results=10,
-                allowed_domains=["martinfowler.com"],
-            )
+        async with WebSearchClient(
+            mock_scorer, rate_limit_seconds=0.0, search_provider=mock_provider
+        ) as client:
+            query = SearchQuery(query="test query", focus_type="architecture", max_results=5)
             results = await client._execute_search(query)
 
         assert len(results) == 1
-        assert "martinfowler.com" in results[0]["url"]
+        assert results[0]["url"] == "https://example.com"
+        mock_provider.execute_search.assert_called_once_with(
+            "test query", max_results=5, allowed_domains=None
+        )
 
     @pytest.mark.asyncio
-    async def test_execute_search_handles_network_error(self, mock_scorer, monkeypatch):
-        """_execute_search returns [] on network error."""
-        import httpx
-
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
-
-        monkeypatch.setattr("httpx.AsyncClient", Mock(return_value=mock_client))
-
+    async def test_no_provider_returns_empty(self, mock_scorer):
+        """Without a search provider, _execute_search returns []."""
         async with WebSearchClient(mock_scorer, rate_limit_seconds=0.0) as client:
-            query = SearchQuery(query="test", focus_type="architecture", max_results=10)
+            query = SearchQuery(query="test", focus_type="architecture")
             results = await client._execute_search(query)
 
         assert results == []
 
     @pytest.mark.asyncio
-    async def test_execute_search_handles_empty_html(self, mock_scorer, monkeypatch):
-        """_execute_search returns [] for HTML with no results."""
-        mock_response = Mock()
-        mock_response.text = "<html><body><p>No results found</p></body></html>"
-        mock_response.raise_for_status = Mock()
+    async def test_provider_closed_on_exit(self, mock_scorer):
+        """Provider.close() is called when context manager exits."""
+        mock_provider = AsyncMock()
+        mock_provider.close = AsyncMock()
 
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        async with WebSearchClient(
+            mock_scorer, rate_limit_seconds=0.0, search_provider=mock_provider
+        ):
+            pass
 
-        monkeypatch.setattr("httpx.AsyncClient", Mock(return_value=mock_client))
+        mock_provider.close.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_allowed_domains_forwarded(self, mock_scorer):
+        """allowed_domains from SearchQuery are forwarded to provider."""
+        mock_provider = AsyncMock()
+        mock_provider.execute_search = AsyncMock(return_value=[])
+        mock_provider.close = AsyncMock()
+
+        async with WebSearchClient(
+            mock_scorer, rate_limit_seconds=0.0, search_provider=mock_provider
+        ) as client:
+            query = SearchQuery(
+                query="test",
+                focus_type="arch",
+                allowed_domains=["example.com"],
+            )
+            await client._execute_search(query)
+
+        mock_provider.execute_search.assert_called_once_with(
+            "test", max_results=10, allowed_domains=["example.com"]
+        )
+
+
+class TestEmptyQueryValidation:
+    """Tests for empty query rejection."""
+
+    @pytest.fixture
+    def mock_scorer(self):
+        scorer = Mock(spec=SourceCredibilityScorer)
+        scorer.score_url.return_value = 0.75
+        return scorer
+
+    @pytest.mark.asyncio
+    async def test_empty_query_returns_empty(self, mock_scorer):
+        """search() returns [] for empty query strings."""
         async with WebSearchClient(mock_scorer, rate_limit_seconds=0.0) as client:
-            query = SearchQuery(query="test", focus_type="architecture", max_results=10)
-            results = await client._execute_search(query)
+            query = SearchQuery(query="", focus_type="test")
+            results = await client.search(query)
+            assert results == []
 
-        assert results == []
+    @pytest.mark.asyncio
+    async def test_whitespace_query_returns_empty(self, mock_scorer):
+        """search() returns [] for whitespace-only query strings."""
+        async with WebSearchClient(mock_scorer, rate_limit_seconds=0.0) as client:
+            query = SearchQuery(query="   ", focus_type="test")
+            results = await client.search(query)
+            assert results == []

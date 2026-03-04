@@ -1,6 +1,6 @@
-baseURL = "https://coreyt.github.io/sine/"
+baseURL = "https://coreyt.github.io/lookout/"
 languageCode = "en-us"
-title = "Sine - Architectural Pattern Enforcement"
+title = "Lookout - Architectural Pattern Enforcement"
 
 # Theme
 theme = "hugo-theme-stack"

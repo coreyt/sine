@@ -40,6 +40,11 @@ htmlcov/
 .tox/
 .hypothesis/
 
-# Sine specific
-.sine-baseline.json
-.sine-cache/
+# Lookout specific
+.lookout-baseline.json
+.lookout-cache/
+
+# Aural
+
+.wake/*
+!.wake/shared/

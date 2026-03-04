@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "aural ingest"
+            "command": "wake ingest"
           }
         ]
       }
@@ -17,7 +17,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "aural plan-check"
+            "command": "wake plan-check"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/git-commit-check.sh"
           }
         ]
       }
@@ -27,7 +36,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "aural session-start && aural render-projection && cat .aural/projection.md"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "wake session-start && wake render-projection && cat .wake/projection.md"
           }
         ]
       }
@@ -37,15 +54,23 @@
         "hooks": [
           {
             "type": "command",
-            "command": "aural session-end && aural snapshot && aural render-projection && aural render-aural-dir"
+            "command": "wake session-end && wake extract-smart-events && wake snapshot && wake render-projection && wake render-wake-dir"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-stop.sh"
           }
         ]
       }
     ]
   },
   "mcpServers": {
-    "aural": {
-      "command": "aural-mcp"
+    "wake": {
+      "command": "wake-mcp"
     }
   }
 }

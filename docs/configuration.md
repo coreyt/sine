@@ -1,24 +1,24 @@
 # Configuration
 
-Sine supports modern configuration via `pyproject.toml` (recommended for Python projects) or a standalone `sine.toml`.
+Lookout supports modern configuration via `pyproject.toml` (recommended for Python projects) or a standalone `lookout.toml`.
 
 ## Quick Setup
 
-The easiest way to configure Sine is with the interactive setup:
+The easiest way to configure Lookout is with the interactive setup:
 
 ```bash
-sine init
+lookout init
 ```
 
 This will:
 - Auto-detect your project type (Python, TypeScript, etc.)
-- Create configuration file (`sine.toml` or add to `pyproject.toml`)
-- Set up `.sine-rules` directory (optional)
+- Create configuration file (`lookout.toml` or add to `pyproject.toml`)
+- Set up `.lookout-rules` directory (optional)
 - Optionally copy built-in rules for customization
 
 ## Built-In Rules
 
-Sine ships with 7 curated architectural rules that work out-of-box:
+Lookout ships with 7 curated architectural rules that work out-of-box:
 
 **Enforcement Rules (ARCH):**
 - `ARCH-001`: HTTP calls require resilience wrappers
@@ -35,17 +35,17 @@ These rules are always available and don't need to be in your project directory.
 
 ## Configuration Resolution
 
-Sine resolves configuration in the following order (highest priority first):
+Lookout resolves configuration in the following order (highest priority first):
 1. **CLI Flags**: Arguments passed directly to the command (e.g., `--format json`).
-2. **`sine.toml`**: A standalone TOML file in the project root.
-3. **`pyproject.toml`**: The standard Python configuration file (under `[tool.sine]`).
+2. **`lookout.toml`**: A standalone TOML file in the project root.
+3. **`pyproject.toml`**: The standard Python configuration file (under `[tool.lookout]`).
 
 ## Options Reference
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `rules_dir` | Path | `".sine-rules"` | Directory containing user-defined Rule Specs (`.yaml`). Built-in rules are always loaded. |
-| `patterns_dir` | Path | `".sine-patterns"` | Directory for storing discovered/validated patterns. |
+| `rules_dir` | Path | `".lookout-rules"` | Directory containing user-defined Rule Specs (`.yaml`). Built-in rules are always loaded. |
+| `patterns_dir` | Path | `".lookout-patterns"` | Directory for storing discovered/validated patterns. |
 | `target` | List[Path] | `["."]` | Default paths to analyze if none provided via CLI. |
 | `format` | String | `"text"` | Output format: `"text"`, `"json"`, or `"sarif"`. |
 
@@ -54,16 +54,16 @@ Sine resolves configuration in the following order (highest priority first):
 ### `pyproject.toml` (Recommended for Python projects)
 
 ```toml
-[tool.sine]
-rules_dir = ".sine-rules"
+[tool.lookout]
+rules_dir = ".lookout-rules"
 target = ["src", "tests"]
 format = "text"
 ```
 
-### `sine.toml` (Standalone configuration)
+### `lookout.toml` (Standalone configuration)
 
 ```toml
-rules_dir = ".sine-rules"
+rules_dir = ".lookout-rules"
 target = ["."]
 format = "text"
 ```
@@ -73,27 +73,27 @@ format = "text"
 You can omit `rules_dir` entirely to use only built-in rules:
 
 ```toml
-[tool.sine]
+[tool.lookout]
 target = ["src"]
 format = "text"
 ```
 
 ## Rule Loading
 
-Sine uses ESLint-style hierarchical rule loading:
+Lookout uses ESLint-style hierarchical rule loading:
 
 1. **Built-in rules** are always loaded from the package
 2. **User rules** are loaded from `rules_dir` (if it exists)
 3. If a user rule has the same ID as a built-in rule, the user rule overrides it
 
 This means:
-- Sine works immediately without any local rules
+- Lookout works immediately without any local rules
 - You can customize or override built-in rules by creating rules with matching IDs
-- You can add organization-specific rules in `.sine-rules/`
+- You can add organization-specific rules in `.lookout-rules/`
 
 ## Migration from Old Default
 
 **Prior to v0.2.0**, the default `rules_dir` was `"rules"`. If you have an existing project:
 
 - **If you have a config file**: No changes needed (explicit `rules_dir` preserved)
-- **If you don't have a config**: Run `sine init` or create `sine.toml` with `rules_dir = "rules"`
+- **If you don't have a config**: Run `lookout init` or create `lookout.toml` with `rules_dir = "rules"`

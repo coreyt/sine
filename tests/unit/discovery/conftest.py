@@ -1,6 +1,6 @@
 import pytest
 
-from sine.discovery.models import (
+from lookout.discovery.models import (
     DiscoveredPattern,
     PatternExample,
     PatternExamples,

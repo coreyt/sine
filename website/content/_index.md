@@ -2,13 +2,13 @@
 title: "Home"
 ---
 
-# Sine
+# Lookout
 
 ## Stop Architecture Drift Before It Happens
 
-**Sine** enforces architectural decisions in code—not in Confluence docs that nobody reads.
+**Lookout** enforces architectural decisions in code—not in Confluence docs that nobody reads.
 
-While ESLint catches `var` vs `const`, Sine catches **"the UI is calling the database directly."**
+While ESLint catches `var` vs `const`, Lookout catches **"the UI is calling the database directly."**
 
 ---
 
@@ -27,7 +27,7 @@ Code reviews are manual, slow, and inconsistent. Documentation gets outdated. Li
 
 ## The Solution
 
-Sine is an **Architectural Compliance Engine** that:
+Lookout is an **Architectural Compliance Engine** that:
 
 1. **Enforces patterns** as code—violations fail CI/CD
 2. **Discovers patterns** already in your codebase automatically
@@ -41,10 +41,10 @@ Think of it as **ESLint for software architecture**.
 
 ```bash
 # 1. Install (works immediately with built-in rules)
-pip install sine
+pip install lookout
 
 # 2. Check your codebase
-sine check
+lookout check
 
 # Output:
 # ❌ src/api/client.py:23
@@ -58,7 +58,7 @@ sine check
 
 ## Built-In Rules
 
-Sine ships with 7 curated rules that work out-of-box:
+Lookout ships with 7 curated rules that work out-of-box:
 
 | Rule | What It Catches |
 |------|-----------------|
@@ -77,15 +77,15 @@ Sine ships with 7 curated rules that work out-of-box:
 ## Key Differentiators
 
 ### vs. ESLint/Ruff
-- **Sine**: Architectural decisions ("All HTTP needs resilience")
+- **Lookout**: Architectural decisions ("All HTTP needs resilience")
 - **Them**: Code style ("Use const, not var")
 
 ### vs. ArchUnit
-- **Sine**: Cross-language via Semgrep, with pattern discovery
+- **Lookout**: Cross-language via Semgrep, with pattern discovery
 - **ArchUnit**: Java-only, manual rule writing
 
 ### vs. Manual Code Review
-- **Sine**: Automated, fast, consistent
+- **Lookout**: Automated, fast, consistent
 - **Reviews**: Manual, slow, subjective
 
 ---
@@ -110,16 +110,16 @@ Block PRs that violate architectural decisions. No more "we agreed on this in th
 
 ```bash
 # Interactive setup
-sine init
+lookout init
 
 # Check your code
-sine check
+lookout check
 
 # Discover patterns
-sine discover
+lookout discover
 
 # CI/CD integration (fails on violations)
-sine check --format sarif
+lookout check --format sarif
 ```
 
 [Get Started →](/docs/)

@@ -5,14 +5,14 @@ weight: 3
 
 # Configuration
 
-Sine uses `sine.toml` or `pyproject.toml` (for Python projects).
+Lookout uses `lookout.toml` or `pyproject.toml` (for Python projects).
 
 ## Minimal Configuration
 
-Sine works without configuration (uses built-in rules):
+Lookout works without configuration (uses built-in rules):
 
 ```bash
-sine check  # Uses all defaults
+lookout check  # Uses all defaults
 ```
 
 ## Basic Configuration
@@ -20,32 +20,32 @@ sine check  # Uses all defaults
 ### Option 1: `pyproject.toml` (Python projects)
 
 ```toml
-[tool.sine]
+[tool.lookout]
 target = ["src", "tests"]
 format = "text"
 ```
 
-### Option 2: `sine.toml` (Any project)
+### Option 2: `lookout.toml` (Any project)
 
 ```toml
 target = ["."]
 format = "json"
-rules_dir = ".sine-rules"
+rules_dir = ".lookout-rules"
 ```
 
 ## Configuration Reference
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `rules_dir` | Path | `".sine-rules"` | User rules directory (optional) |
+| `rules_dir` | Path | `".lookout-rules"` | User rules directory (optional) |
 | `target` | List[Path] | `["."]` | Directories to analyze |
 | `format` | String | `"text"` | Output: `text`, `json`, or `sarif` |
-| `patterns_dir` | Path | `".sine-patterns"` | Discovered patterns storage |
+| `patterns_dir` | Path | `".lookout-patterns"` | Discovered patterns storage |
 | `repo` | String | `null` | GitHub repo for context |
 
 ## Rule Loading
 
-Sine uses hierarchical rule loading (ESLint-style):
+Lookout uses hierarchical rule loading (ESLint-style):
 
 1. **Built-in rules** (always loaded, 7 rules included)
 2. **User rules** from `rules_dir` (if exists)
@@ -64,21 +64,21 @@ Result:    ARCH-001 (user version), ARCH-003, PATTERN-DISC-006, ..., CUSTOM-001
 ### Multiple Target Directories
 
 ```toml
-[tool.sine]
+[tool.lookout]
 target = ["src", "lib", "tests"]
 ```
 
 ### Custom Rules Directory
 
 ```toml
-[tool.sine]
+[tool.lookout]
 rules_dir = "governance/architectural-rules"
 ```
 
 ### CI/CD-Friendly
 
 ```toml
-[tool.sine]
+[tool.lookout]
 format = "sarif"  # For GitHub Code Scanning
 fail_on_rule_error = true  # Exit 1 on parse errors
 ```

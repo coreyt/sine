@@ -11,7 +11,7 @@ Test cases:
 import pytest
 from pydantic import ValidationError
 
-from sine.discovery.models import (
+from lookout.discovery.models import (
     CompiledPattern,
     DiscoveredPattern,
     PatternExample,

@@ -5,7 +5,7 @@ weight: 2
 
 # Architectural Pattern Catalog
 
-Sine's pattern catalog spans enforcement rules and discovery patterns.
+Lookout's pattern catalog spans enforcement rules and discovery patterns.
 
 ## Enforcement Patterns (ARCH)
 
@@ -52,7 +52,7 @@ These **document existing patterns** for analysis and architectural understandin
 Create organization-specific rules:
 
 ```yaml
-# .sine-rules/database-layer.yaml
+# .lookout-rules/database-layer.yaml
 schema_version: 1
 
 rule:
@@ -82,4 +82,4 @@ rule:
 | **Tier 2** | Graph Analysis | Medium | Dependency paths, layering |
 | **Tier 3** | CodeQL (Deep) | Slow | Taint analysis, control flow |
 
-Most Sine rules use **Tier 1** for optimal performance.
+Most Lookout rules use **Tier 1** for optimal performance.

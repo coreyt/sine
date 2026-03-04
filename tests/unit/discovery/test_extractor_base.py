@@ -2,8 +2,8 @@
 
 import pytest
 
-from sine.discovery.agents.base import SearchFocus
-from sine.discovery.extractors.base import (
+from lookout.discovery.agents.base import SearchFocus
+from lookout.discovery.extractors.base import (
     ExtractionContext,
     ExtractionResult,
     PatternExtractor,

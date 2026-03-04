@@ -8,13 +8,13 @@ Test cases:
 
 import pytest
 
-from sine.discovery.agents.base import (
+from lookout.discovery.agents.base import (
     AgentRegistry,
     SearchConstraints,
     SearchFocus,
     validate_agent,
 )
-from sine.discovery.models import DiscoveredPattern, PatternExamples
+from lookout.discovery.models import DiscoveredPattern, PatternExamples
 
 
 class TestAgentProtocol:

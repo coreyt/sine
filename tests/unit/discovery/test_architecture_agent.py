@@ -4,11 +4,11 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from sine.discovery.agents.architecture import ArchitectureAgent
-from sine.discovery.agents.base import SearchConstraints, SearchFocus
-from sine.discovery.extractors.base import ExtractionResult
-from sine.discovery.models import DiscoveredPattern
-from sine.discovery.search import SearchResult
+from lookout.discovery.agents.architecture import ArchitectureAgent
+from lookout.discovery.agents.base import SearchConstraints, SearchFocus
+from lookout.discovery.extractors.base import ExtractionResult
+from lookout.discovery.models import DiscoveredPattern
+from lookout.discovery.search import SearchResult
 
 
 class TestArchitectureAgent:
@@ -41,7 +41,7 @@ class TestArchitectureAgent:
     @pytest.fixture
     def sample_pattern(self):
         """Create a sample discovered pattern."""
-        from sine.discovery.models import PatternExample, PatternExamples
+        from lookout.discovery.models import PatternExample, PatternExamples
 
         return DiscoveredPattern(
             pattern_id="ARCH-DI-001",
@@ -144,7 +144,7 @@ class TestArchitectureAgent:
         self, mock_extractor, mock_search_client, sample_search_result
     ):
         """Test filtering patterns by language."""
-        from sine.discovery.models import PatternExamples
+        from lookout.discovery.models import PatternExamples
 
         # Create patterns with different languages
         python_pattern = DiscoveredPattern(
@@ -229,7 +229,7 @@ class TestArchitectureAgent:
         self, mock_extractor, mock_search_client, sample_search_result
     ):
         """Test filtering patterns by framework."""
-        from sine.discovery.models import PatternExamples
+        from lookout.discovery.models import PatternExamples
 
         django_pattern = DiscoveredPattern(
             pattern_id="ARCH-DSGN-001",
@@ -296,7 +296,7 @@ class TestArchitectureAgent:
         self, mock_extractor, mock_search_client, sample_search_result
     ):
         """Test filtering patterns by confidence level."""
-        from sine.discovery.models import PatternExamples
+        from lookout.discovery.models import PatternExamples
 
         high_pattern = DiscoveredPattern(
             pattern_id="ARCH-DSGN-001",
@@ -375,7 +375,7 @@ class TestArchitectureAgent:
     @pytest.mark.asyncio
     async def test_deduplication(self, mock_extractor, mock_search_client, sample_search_result):
         """Test that duplicate patterns are removed."""
-        from sine.discovery.models import PatternExamples
+        from lookout.discovery.models import PatternExamples
 
         # Two search results
         results = [sample_search_result, sample_search_result]
@@ -449,7 +449,7 @@ class TestArchitectureAgent:
         self, mock_extractor, mock_search_client, sample_search_result
     ):
         """Test that max_results is respected."""
-        from sine.discovery.models import PatternExamples
+        from lookout.discovery.models import PatternExamples
 
         # Create 5 different patterns
         patterns = []
@@ -623,8 +623,9 @@ class TestFetchFullContent:
         self, mock_extractor, mock_search_client, sample_search_result, monkeypatch
     ):
         """When page fetch fails, falls back to snippet — no exception raised."""
-        import httpx
         from unittest.mock import AsyncMock, Mock
+
+        import httpx
 
         mock_http_client = AsyncMock()
         mock_http_client.get = AsyncMock(side_effect=httpx.ConnectError("timeout"))
@@ -658,11 +659,82 @@ class TestFetchFullContent:
         assert sample_search_result.snippet in captured_contexts[0].source_text
 
     @pytest.mark.asyncio
+    async def test_fetch_page_text_retries_on_transient_failure(
+        self, mock_extractor, mock_search_client, sample_search_result, monkeypatch
+    ):
+        """_fetch_page_text retries on transient network errors."""
+        from unittest.mock import AsyncMock, MagicMock, Mock
+
+        import httpx
+
+        call_count = 0
+
+        async def mock_get(*args, **kwargs):  # type: ignore[no-untyped-def]
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise httpx.ConnectError("transient failure")
+            resp = MagicMock()
+            resp.text = "<html><body><p>Recovered content</p></body></html>"
+            resp.raise_for_status = Mock()
+            return resp
+
+        mock_http_client = AsyncMock()
+        mock_http_client.get = AsyncMock(side_effect=mock_get)
+        mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
+        mock_http_client.__aexit__ = AsyncMock(return_value=None)
+
+        monkeypatch.setattr("httpx.AsyncClient", Mock(return_value=mock_http_client))
+        # Disable actual sleep during retry
+        monkeypatch.setattr("lookout.discovery.search.retry.asyncio.sleep", AsyncMock())
+
+        captured_contexts = []
+
+        async def mock_extract(context):  # type: ignore[no-untyped-def]
+            captured_contexts.append(context)
+            return ExtractionResult(patterns=[], confidence=0.0, method="hybrid")
+
+        mock_extractor.extract_patterns = AsyncMock(side_effect=mock_extract)
+        mock_search_client.search = AsyncMock(return_value=[sample_search_result])
+
+        agent = ArchitectureAgent(
+            extractor=mock_extractor,
+            search_client=mock_search_client,
+            fetch_full_content=True,
+        )
+
+        focus = SearchFocus(focus_type="architecture", description="Find DI patterns")
+        constraints = SearchConstraints(max_results=10)
+        await agent.discover_patterns(focus, constraints)
+
+        assert len(captured_contexts) == 1
+        # Should have recovered content (not just snippet)
+        assert "Recovered content" in captured_contexts[0].source_text
+
+    @pytest.mark.asyncio
+    async def test_discover_patterns_graceful_on_search_error(
+        self, mock_extractor, mock_search_client
+    ):
+        """discover_patterns returns [] when search raises an exception."""
+        mock_search_client.search = AsyncMock(side_effect=RuntimeError("search broke"))
+
+        agent = ArchitectureAgent(
+            extractor=mock_extractor,
+            search_client=mock_search_client,
+        )
+
+        focus = SearchFocus(focus_type="architecture", description="Find patterns")
+        constraints = SearchConstraints(max_results=10)
+
+        patterns = await agent.discover_patterns(focus, constraints)
+        assert patterns == []
+        mock_extractor.extract_patterns.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_fetch_full_content_disabled_by_default(
         self, mock_extractor, mock_search_client, sample_search_result, monkeypatch
     ):
         """When fetch_full_content=False (default), no HTTP GET calls are made."""
-        import httpx
         from unittest.mock import AsyncMock, Mock
 
         get_called = []

@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, Mock, patch
 import httpx
 import pytest
 
-from sine.discovery.agents.base import SearchFocus
-from sine.discovery.extractors.base import ExtractionContext
-from sine.discovery.extractors.llm import LLMExtractor, LLMProvider
+from lookout.discovery.agents.base import SearchFocus
+from lookout.discovery.extractors.base import ExtractionContext
+from lookout.discovery.extractors.llm import LLMExtractor, LLMProvider
 
 
 # Helper to create valid pattern data

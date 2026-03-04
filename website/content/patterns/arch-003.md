@@ -50,8 +50,8 @@ click.echo("❌ Operation failed", err=True)
 Built-in rule. To customize severity:
 
 ```bash
-sine init --copy-built-in-rules
-# Edit .sine-rules/ARCH-003.yaml
+lookout init --copy-built-in-rules
+# Edit .lookout-rules/ARCH-003.yaml
 # Change severity: "warning" → "error" or "info"
 ```
 

@@ -2,9 +2,9 @@
 
 import pytest
 
-from sine.discovery.agents.base import SearchFocus
-from sine.discovery.extractors.base import ExtractionContext
-from sine.discovery.extractors.keyword import KeywordExtractor
+from lookout.discovery.agents.base import SearchFocus
+from lookout.discovery.extractors.base import ExtractionContext
+from lookout.discovery.extractors.keyword import KeywordExtractor
 
 
 class TestKeywordExtractor:

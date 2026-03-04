@@ -12,13 +12,13 @@ from pathlib import Path
 
 import pytest
 
-from sine.discovery.models import (
+from lookout.discovery.models import (
     DiscoveredPattern,
     PatternExample,
     PatternExamples,
     ValidatedPattern,
 )
-from sine.discovery.storage import PatternStorage
+from lookout.discovery.storage import PatternStorage
 
 
 class TestPatternStorage:

@@ -13,24 +13,24 @@ weight: 1
 ## Install from PyPI
 
 ```bash
-pip install sine
+pip install lookout
 ```
 
 ## Install from Source
 
 ```bash
-git clone https://github.com/coreyt/sine
-cd sine
+git clone https://github.com/coreyt/lookout
+cd lookout
 pip install -e .
 ```
 
 ## Verify Installation
 
 ```bash
-sine --version
-# sine, version 0.2.0
+lookout --version
+# lookout, version 0.2.0
 
-sine check --help
+lookout check --help
 # Shows available commands
 ```
 

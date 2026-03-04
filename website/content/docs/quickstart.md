@@ -5,21 +5,21 @@ weight: 2
 
 # Quick Start Guide
 
-Get up and running with Sine in 5 minutes.
+Get up and running with Lookout in 5 minutes.
 
 ## Step 1: Install
 
 ```bash
-pip install sine
+pip install lookout
 ```
 
 ## Step 2: Initialize (Optional)
 
-Sine works immediately with built-in rules, but you can customize:
+Lookout works immediately with built-in rules, but you can customize:
 
 ```bash
 cd your-project
-sine init
+lookout init
 
 # Interactive prompts:
 # ✓ Use pyproject.toml? Yes
@@ -32,8 +32,8 @@ Creates configuration:
 
 ```toml
 # pyproject.toml
-[tool.sine]
-rules_dir = ".sine-rules"
+[tool.lookout]
+rules_dir = ".lookout-rules"
 target = ["src", "tests"]
 format = "text"
 ```
@@ -41,7 +41,7 @@ format = "text"
 ## Step 3: Run Your First Check
 
 ```bash
-sine check
+lookout check
 ```
 
 Example output:
@@ -75,7 +75,7 @@ Example output:
 Find existing patterns in your codebase:
 
 ```bash
-sine discover
+lookout discover
 ```
 
 Output shows pattern instances for documentation:
@@ -105,15 +105,15 @@ name: Architecture Check
 on: [push, pull_request]
 
 jobs:
-  sine:
+  lookout:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - run: pip install sine
-      - run: sine check --format sarif > results.sarif
+      - run: pip install lookout
+      - run: lookout check --format sarif > results.sarif
       - uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: results.sarif

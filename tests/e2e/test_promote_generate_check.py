@@ -13,17 +13,17 @@ from unittest.mock import AsyncMock, Mock
 import yaml
 from click.testing import CliRunner
 
-from sine.cli import cli
-from sine.discovery.models import (
+from lookout.cli import cli
+from lookout.discovery.models import (
     DiscoveredPattern,
     PatternExample,
     PatternExamples,
     ValidatedPattern,
 )
-from sine.discovery.storage import PatternStorage
-from sine.models import ForbiddenCheck, PatternDiscoveryCheck
-from sine.promotion import promote_to_spec
-from sine.semgrep import compile_semgrep_config
+from lookout.discovery.storage import PatternStorage
+from lookout.models import ForbiddenCheck, PatternDiscoveryCheck
+from lookout.promotion import promote_to_spec
+from lookout.semgrep import compile_semgrep_config
 
 
 def _sample_discovered() -> DiscoveredPattern:
@@ -91,8 +91,8 @@ class TestPromoteWithGenerateCheckE2E:
 
     def test_full_pipeline_raw_to_enforced_rule(self, tmp_path: Path, monkeypatch: object) -> None:
         """Raw pattern on disk → validate CLI → promote --generate-check → YAML with real check."""
-        patterns_dir = tmp_path / ".sine-patterns"
-        rules_dir = tmp_path / ".sine-rules"
+        patterns_dir = tmp_path / ".lookout-patterns"
+        rules_dir = tmp_path / ".lookout-rules"
 
         # ── Step 1: Save a raw pattern to disk ──────────────────────────
         storage = PatternStorage(patterns_dir)
@@ -137,7 +137,7 @@ class TestPromoteWithGenerateCheckE2E:
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-e2e")  # type: ignore[attr-defined]
 
         # Mock the httpx client inside RuleGenerator
-        import sine.rule_generator as rg
+        import lookout.rule_generator as rg
 
         original_aenter = rg.RuleGenerator.__aenter__
 
@@ -180,7 +180,7 @@ class TestPromoteWithGenerateCheckE2E:
         assert spec_data["rule"]["severity"] == "error"
 
         # ── Step 5: Verify it compiles to valid Semgrep config ──────────
-        from sine.models import RuleSpecFile
+        from lookout.models import RuleSpecFile
 
         spec = RuleSpecFile.model_validate(spec_data)
         config = compile_semgrep_config([spec])
@@ -193,8 +193,8 @@ class TestPromoteWithGenerateCheckE2E:
 
     def test_promote_without_generate_check_uses_placeholder(self, tmp_path: Path) -> None:
         """Without --generate-check, promote falls back to PatternDiscoveryCheck placeholder."""
-        patterns_dir = tmp_path / ".sine-patterns"
-        rules_dir = tmp_path / ".sine-rules"
+        patterns_dir = tmp_path / ".lookout-patterns"
+        rules_dir = tmp_path / ".lookout-rules"
 
         # Save raw + validate in-process (not via CLI to keep test focused)
         storage = PatternStorage(patterns_dir)
@@ -228,8 +228,8 @@ class TestPromoteWithGenerateCheckE2E:
         self, tmp_path: Path, monkeypatch: object
     ) -> None:
         """When LLM fails, promote still succeeds with placeholder check."""
-        patterns_dir = tmp_path / ".sine-patterns"
-        rules_dir = tmp_path / ".sine-rules"
+        patterns_dir = tmp_path / ".lookout-patterns"
+        rules_dir = tmp_path / ".lookout-rules"
 
         storage = PatternStorage(patterns_dir)
         raw = _sample_discovered()
@@ -241,7 +241,7 @@ class TestPromoteWithGenerateCheckE2E:
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-e2e")  # type: ignore[attr-defined]
 
         # Mock the LLM to return garbage
-        import sine.rule_generator as rg
+        import lookout.rule_generator as rg
 
         original_aenter = rg.RuleGenerator.__aenter__
 
@@ -291,8 +291,8 @@ class TestPromoteWithGenerateCheckE2E:
 
     def test_promote_generate_check_must_wrap(self, tmp_path: Path, monkeypatch: object) -> None:
         """LLM generates a must_wrap check — verify it compiles correctly."""
-        patterns_dir = tmp_path / ".sine-patterns"
-        rules_dir = tmp_path / ".sine-rules"
+        patterns_dir = tmp_path / ".lookout-patterns"
+        rules_dir = tmp_path / ".lookout-rules"
 
         storage = PatternStorage(patterns_dir)
         raw = _sample_discovered()
@@ -311,7 +311,7 @@ class TestPromoteWithGenerateCheckE2E:
         # RuleGenerator.__init__ needs an API key
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-e2e")  # type: ignore[attr-defined]
 
-        import sine.rule_generator as rg
+        import lookout.rule_generator as rg
 
         original_aenter = rg.RuleGenerator.__aenter__
 
@@ -346,7 +346,7 @@ class TestPromoteWithGenerateCheckE2E:
         assert spec_data["rule"]["check"]["target"] == ["OrderRepo()"]
 
         # Verify Semgrep compilation
-        from sine.models import RuleSpecFile
+        from lookout.models import RuleSpecFile
 
         spec = RuleSpecFile.model_validate(spec_data)
         config = compile_semgrep_config([spec])

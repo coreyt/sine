@@ -4,14 +4,14 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from sine.discovery.agents.base import SearchFocus
-from sine.discovery.extractors.base import (
+from lookout.discovery.agents.base import SearchFocus
+from lookout.discovery.extractors.base import (
     ExtractionContext,
     ExtractionResult,
 )
-from sine.discovery.extractors.hybrid import HybridExtractor
-from sine.discovery.extractors.llm import LLMProvider
-from sine.discovery.models import DiscoveredPattern
+from lookout.discovery.extractors.hybrid import HybridExtractor
+from lookout.discovery.extractors.llm import LLMProvider
+from lookout.discovery.models import DiscoveredPattern
 
 
 @pytest.fixture

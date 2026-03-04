@@ -3,9 +3,9 @@ title: "Documentation"
 weight: 1
 ---
 
-# Sine Documentation
+# Lookout Documentation
 
-Learn how to use Sine for architectural pattern enforcement and discovery.
+Learn how to use Lookout for architectural pattern enforcement and discovery.
 
 ## Getting Started
 - [Installation](installation/)

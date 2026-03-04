@@ -1,14 +1,14 @@
-# Sine
+# Lookout
 
-**Sine is not ESLint** - it's a next-generation code pattern enforcement and discovery tool.
+**Lookout is not ESLint** - it's a next-generation code pattern enforcement and discovery tool.
 
-Sine can be considered a "Architectural Compliance Engine" or even better, a "Governance-as-Code Platform (GaP) tool."
+Lookout can be considered a "Architectural Compliance Engine" or even better, a "Governance-as-Code Platform (GaP) tool."
  * It enforces high-level architectural decisions (e.g., "All HTTP calls must use a circuit breaker") rather than low-level code style. It operates similarly to tools like ArchUnit or Open Policy Agent (OPA), but for code structure.
- * Key Differentiator: The "Discovery" aspect. Most tools only enforce known rules. sine proposes to learn what rules should exist, making it a "Knowledge-Driven Governance Tool".
+ * Key Differentiator: The "Discovery" aspect. Most tools only enforce known rules. Lookout proposes to learn what rules should exist, making it a "Knowledge-Driven Governance Tool".
 
-## What is Sine?
+## What is Lookout?
 
-Sine combines:
+Lookout combines:
 - **Pattern Enforcement**: Compile high-level coding guidelines into Semgrep rules and enforce them in your codebase
 - **Pattern Discovery**: Use AI-powered research agents to discover best practices from trusted sources and generate enforcement rules automatically
 
@@ -26,10 +26,16 @@ Sine combines:
 - Run pattern matching across your codebase
 - **Multiple Output Formats**: Text, JSON, and SARIF for CI/CD integration
 
+### AI-Powered Discovery Pipeline
+- **Web Research**: `lookout research` searches trusted sources (Martin Fowler, Refactoring Guru, cloud provider docs) and extracts coding patterns via LLM or keyword extraction
+- **Documentation Analysis**: `lookout research --docs .` reads your project's own `ARCHITECTURE.md`, `DESIGN.md`, and ADR files to extract the architectural patterns your team has already documented
+- **Validation**: `lookout validate` marks discovered patterns as reviewed and assigns enforcement tiers
+- **Promotion**: `lookout promote` transpiles validated patterns into enforcement rules, with optional LLM-based Semgrep rule generation (`--generate-check`)
+
 ### Governance Workflow
-- **Interactive Setup**: `sine init` command for easy onboarding
+- **Interactive Setup**: `lookout init` command for easy onboarding
 - **Pattern Discovery**: Use AI-powered agents to find patterns in your code
-- **Promotion**: Transpile validated patterns into enforcement rules (`sine promote`)
+- **Architecture Conformance**: Verify that implementation matches documented architecture by deriving rules from your own design docs
 
 ## Installation
 
@@ -40,25 +46,35 @@ pip install -e .
 ## Quick Start
 
 ```bash
-# Initialize Sine for your project (interactive setup)
-sine init
+# Initialize Lookout for your project (interactive setup)
+lookout init
 
 # Or just start checking with built-in rules
-sine check
+lookout check
 
 # Discover patterns in your codebase
-sine discover
+lookout discover
+
+# Research patterns from trusted web sources (keyword-only, no API key needed)
+lookout research --focus "dependency injection" --no-llm
+
+# Derive patterns from your project's own architecture docs
+lookout research --focus "architectural patterns" --docs . --no-llm
+
+# Validate and promote a discovered pattern to an enforcement rule
+lookout validate ARCH-DI-001
+lookout promote ARCH-DI-001
 ```
 
-Sine works immediately without configuration - it ships with 7 built-in architectural rules. The `init` command helps you customize settings and optionally add project-specific rules.
+Lookout works immediately without configuration - it ships with 7 built-in architectural rules. The `init` command helps you customize settings and optionally add project-specific rules.
 
 ## Project Status
 
-Sine is in active development. It was extracted from the [ling](https://github.com/coreyt/ling) project to become a standalone tool.
+Lookout is in active development. It was extracted from the [ling](https://github.com/coreyt/ling) project to become a standalone tool.
 
 ## Documentation
 
-- **[Configuration](docs/configuration.md)** - How to configure Sine via `pyproject.toml` or `sine.toml`.
+- **[Configuration](docs/configuration.md)** - How to configure Lookout via `pyproject.toml` or `lookout.toml`.
 - **`docs/research/`** - Design docs, pattern discovery methodology, validation results
 - **`docs/specs/`** - Rule specifications, pattern library, and examples
   - `docs/specs/rule-specs/examples/` - 23 ready-to-use rule specs (3 ARCH, 20 PATTERN-DISC)
@@ -79,9 +95,8 @@ We chose this license because we believe in building in the open, but we also be
 
 #### What you cannot do:
 
-* **Managed Services:** You cannot provide this software as a managed service (SaaS) to third parties. If you are a hyperscaler or service provider looking to sell "Sine-as-a-Service," you must contact us for a commercial license.
+* **Managed Services:** You cannot provide this software as a managed service (SaaS) to third parties. If you are a hyperscaler or service provider looking to sell "Lookout-as-a-Service," you must contact us for a commercial license.
 * **No Circumvention:** You cannot bypass any license key or security features built into the software.
 * **No Sublicensing:** You cannot sell the license to others or claim the code as your own.
 
 > **In short:** If you aren't trying to build a competing AWS-style managed service using our code, you are likely good to go.
-

@@ -2,7 +2,7 @@
 
 import pytest
 
-from sine.discovery.search.credibility import SourceCredibilityScorer
+from lookout.discovery.search.credibility import SourceCredibilityScorer
 
 
 class TestSourceCredibilityScorer:

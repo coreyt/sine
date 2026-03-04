@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sine"
+name = "lookout"
 version = "0.1.0"
-description = "Sine: Intelligent code pattern enforcement and discovery tool"
+description = "Lookout: Intelligent code pattern enforcement and discovery tool"
 readme = "README.md"
 license = {text = "Elastic License 2.0 (ELv2)"}
 requires-python = ">=3.10"
@@ -50,20 +50,20 @@ dev = [
 ]
 
 [project.scripts]
-sine = "sine.cli:cli"
+lookout = "lookout.cli:cli"
 
 [project.urls]
-Homepage = "https://github.com/coreyt/sine"
-Repository = "https://github.com/coreyt/sine"
-Issues = "https://github.com/coreyt/sine/issues"
+Homepage = "https://github.com/coreyt/lookout"
+Repository = "https://github.com/coreyt/lookout"
+Issues = "https://github.com/coreyt/lookout/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sine"]
+packages = ["src/lookout"]
 
 [tool.hatch.build]
 include = [
-    "src/sine/**/*.py",
-    "src/sine/**/*.yaml",
+    "src/lookout/**/*.py",
+    "src/lookout/**/*.yaml",
 ]
 
 [tool.pytest.ini_options]
@@ -80,7 +80,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src/sine"]
+source = ["src/lookout"]
 branch = true
 
 [tool.coverage.report]
