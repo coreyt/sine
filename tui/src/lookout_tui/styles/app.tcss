@@ -1,0 +1,98 @@
+/* Lookout TUI — Textual CSS */
+
+Screen {
+    background: $surface;
+}
+
+#screen-title {
+    dock: top;
+    height: 1;
+    background: $primary;
+    color: $text;
+    text-style: bold;
+    padding: 0 1;
+}
+
+#filter-input {
+    dock: top;
+    height: 3;
+    margin: 0 1;
+}
+
+/* Browser layout */
+#browser-main {
+    height: 1fr;
+}
+
+#table-panel {
+    width: 60%;
+    border-right: solid $primary-darken-2;
+}
+
+#detail-panel {
+    width: 40%;
+    padding: 1;
+    overflow-y: auto;
+}
+
+#pattern-table {
+    height: 1fr;
+}
+
+#pattern-detail {
+    height: 1fr;
+}
+
+/* Generation layout */
+#generation-main {
+    height: 1fr;
+}
+
+#queue-panel {
+    width: 30%;
+    border-right: solid $primary-darken-2;
+}
+
+#stage-panel {
+    width: 70%;
+    padding: 1;
+}
+
+#stage-progress {
+    height: auto;
+    max-height: 40%;
+    border-bottom: solid $primary-darken-2;
+    padding: 1;
+}
+
+#diff-view {
+    height: 1fr;
+    overflow-y: auto;
+    padding: 1;
+}
+
+#job-queue {
+    height: 1fr;
+}
+
+/* Model selector */
+#model-selector, #config-model-selector {
+    dock: top;
+    height: 3;
+}
+
+/* Config editor */
+#config-form {
+    padding: 1 2;
+    max-width: 80;
+}
+
+#config-form Input {
+    margin: 0 0 1 0;
+}
+
+/* Placeholder screens */
+#placeholder {
+    padding: 2;
+    text-align: center;
+}
