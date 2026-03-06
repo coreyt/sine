@@ -1,0 +1,107 @@
+schema_version: 2
+
+pattern:
+  id: "LAYER-001"
+  title: "Layered Architecture Import Boundaries"
+  description: |
+    Code in higher layers (presentation/controllers) must not directly
+    import from lower layers (data access/repositories). Dependencies
+    should flow downward through the service/business layer.
+  rationale: |
+    Skipping layers creates tight coupling between presentation and
+    persistence concerns. Changes to the data layer then ripple up
+    to controllers, making the system fragile and hard to refactor.
+  version: "1.0.0"
+  tier: 2
+  category: "architecture"
+  subcategory: "layered-architecture"
+  severity: "warning"
+  tags:
+    - architecture
+    - separation-of-concerns
+    - coupling
+
+  reporting:
+    default_message: "Cross-layer import detected — controllers should not import from data layer directly (LAYER-001)"
+    confidence: "medium"
+
+  references:
+    - "https://martinfowler.com/bliki/PresentationDomainDataLayering.html"
+
+  variants:
+    - language: python
+      version_constraint: ">=3.10"
+
+      generic:
+        check:
+          type: "raw"
+          config: |
+            rules:
+              - id: layer-001-python-impl
+                languages: [python]
+                severity: WARNING
+                message: >-
+                  Controller imports directly from data/repository layer —
+                  go through the service layer instead (LAYER-001)
+                pattern-either:
+                  - pattern: from $PKG.repositories import $NAME
+                  - pattern: import $PKG.repositories
+                  - pattern: from $PKG.data import $NAME
+                  - pattern: from $PKG.dao import $NAME
+        examples:
+          good:
+            - language: python
+              code: |
+                # controllers/orders.py
+                from myapp.services import OrderService
+
+                class OrderController:
+                    def __init__(self, service: OrderService):
+                        self._service = service
+          bad:
+            - language: python
+              code: |
+                # controllers/orders.py
+                from myapp.repositories import OrderRepository
+
+                class OrderController:
+                    def __init__(self):
+                        self._repo = OrderRepository()
+
+    - language: typescript
+      version_constraint: ">=4.0"
+
+      generic:
+        check:
+          type: "raw"
+          config: |
+            rules:
+              - id: layer-001-typescript-impl
+                languages: [typescript]
+                severity: WARNING
+                message: >-
+                  Controller imports directly from data/repository layer —
+                  go through the service layer instead (LAYER-001)
+                pattern-either:
+                  - pattern: import { $NAME } from '$PKG/repositories/$MOD'
+                  - pattern: import { $NAME } from '$PKG/data/$MOD'
+                  - pattern: import { $NAME } from '$PKG/dao/$MOD'
+        examples:
+          good:
+            - language: typescript
+              code: |
+                // controllers/orders.controller.ts
+                import { OrderService } from '../services/order.service';
+
+                export class OrderController {
+                  constructor(private readonly orderService: OrderService) {}
+                }
+          bad:
+            - language: typescript
+              code: |
+                // controllers/orders.controller.ts
+                import { OrderRepository } from '../repositories/order.repository';
+
+                export class OrderController {
+                  constructor(private readonly repo: OrderRepository) {}
+                }

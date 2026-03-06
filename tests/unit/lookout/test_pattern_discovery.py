@@ -154,7 +154,7 @@ def test_parse_semgrep_output_pattern_discovery():
     assert len(pattern_instances) == 1
 
     # Verify finding
-    assert findings[0].guideline_id == "ARCH-001"
+    assert findings[0].pattern_id == "ARCH-001"
     assert findings[0].severity == "error"
     assert findings[0].line == 10
 

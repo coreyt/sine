@@ -1,0 +1,49 @@
+schema_version: 2
+
+pattern:
+  id: "PATTERN-DISC-011"
+  title: "Dependency Injection Pattern"
+  description: |
+    Discovers usage of the Dependency Injection pattern where dependencies are passed
+    via constructor rather than created internally. Excludes simple data types.
+  rationale: |
+    Dependency Injection promotes loose coupling by injecting dependencies rather than
+    having classes create them. Enables testing with mocks and improves flexibility.
+  version: "1.0.0"
+  tier: 1
+  category: "architectural"
+  severity: "info"
+  tags:
+    - design-patterns
+    - dependency-injection
+    - testability
+  reporting:
+    default_message: "Dependency Injection pattern detected. Dependencies are passed via constructor."
+    confidence: "medium"
+  references:
+    - "https://martinfowler.com/articles/injection.html"
+  status: "active"
+
+  variants:
+    - language: python
+      generic:
+        check:
+          type: "pattern_discovery"
+          patterns:
+            - |
+              class $CLASS:
+                def __init__(..., $DEP, ...):
+                  ...
+                  self.$FIELD = $DEP
+          metavariable_regex:
+            - metavariable: "$FIELD"
+              regex: "^_.*"
+        examples:
+          good:
+            - language: python
+              code: |
+                class RuleProcessor:
+                    def __init__(self, fetcher: RuleFetcher, cache: CacheManager):
+                        self._fetcher = fetcher
+                        self._cache = cache
+          bad: []

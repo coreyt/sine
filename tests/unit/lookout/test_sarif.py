@@ -9,7 +9,7 @@ from lookout.sarif import _map_severity_to_sarif, format_findings_sarif
 
 
 def _finding(
-    guideline_id: str = "ARCH-001",
+    pattern_id: str = "ARCH-001",
     title: str = "HTTP resilience wrappers",
     severity: str = "error",
     file: str = "src/app.py",
@@ -19,7 +19,7 @@ def _finding(
     tier: int = 1,
 ) -> Finding:
     return Finding(
-        guideline_id=guideline_id,
+        pattern_id=pattern_id,
         title=title,
         category="architecture",
         severity=severity,
@@ -77,7 +77,7 @@ class TestFormatFindingsSarif:
         assert len(run["tool"]["driver"]["rules"]) == 1
 
     def test_result_contains_correct_fields(self) -> None:
-        f = _finding(guideline_id="ARCH-001", message="Missing wrapper", severity="error")
+        f = _finding(pattern_id="ARCH-001", message="Missing wrapper", severity="error")
         output = format_findings_sarif([f])
         sarif = json.loads(output)
 
@@ -97,7 +97,7 @@ class TestFormatFindingsSarif:
         assert loc["region"]["snippet"]["text"] == "requests.post(url)"
 
     def test_rule_entry_contains_correct_fields(self) -> None:
-        f = _finding(guideline_id="ARCH-001", title="HTTP resilience wrappers", tier=1)
+        f = _finding(pattern_id="ARCH-001", title="HTTP resilience wrappers", tier=1)
         output = format_findings_sarif([f])
         sarif = json.loads(output)
 
@@ -120,8 +120,8 @@ class TestFormatFindingsSarif:
 
     def test_multiple_findings_different_rules(self) -> None:
         findings = [
-            _finding(guideline_id="ARCH-001", title="Rule One"),
-            _finding(guideline_id="ARCH-002", title="Rule Two"),
+            _finding(pattern_id="ARCH-001", title="Rule One"),
+            _finding(pattern_id="ARCH-002", title="Rule Two"),
         ]
         output = format_findings_sarif(findings)
         sarif = json.loads(output)
@@ -144,9 +144,9 @@ class TestFormatFindingsSarif:
 
     def test_severity_mapped_correctly_in_results(self) -> None:
         findings = [
-            _finding(guideline_id="R1", severity="error"),
-            _finding(guideline_id="R2", severity="warning"),
-            _finding(guideline_id="R3", severity="info"),
+            _finding(pattern_id="R1", severity="error"),
+            _finding(pattern_id="R2", severity="warning"),
+            _finding(pattern_id="R3", severity="info"),
         ]
         output = format_findings_sarif(findings)
         sarif = json.loads(output)
@@ -165,7 +165,7 @@ class TestFormatFindingsSarif:
     def test_sarif_uses_finding_category(self) -> None:
         """Category in SARIF rule properties comes from finding.category, not hardcoded."""
         f = Finding(
-            guideline_id="SEC-001",
+            pattern_id="SEC-001",
             title="Security Rule",
             category="security",
             severity="error",

@@ -12,7 +12,7 @@ from typing import Any
 
 import click
 
-from lookout.rules_loader import get_built_in_rules_path
+from lookout.rules_loader import get_built_in_patterns_path
 
 
 def detect_project_type() -> dict[str, bool]:
@@ -103,7 +103,7 @@ def copy_built_in_rules_to_local(rules_dir: Path, selected_ids: list[str] | None
         selected_ids: If provided, only copy rules with these IDs
                      (e.g., ["ARCH-001", "ARCH-003"])
     """
-    built_in_path = get_built_in_rules_path()
+    built_in_path = get_built_in_patterns_path()
 
     rules_dir.mkdir(parents=True, exist_ok=True)
 
@@ -186,9 +186,12 @@ def run_init(
     # Handle rules directory
     if copy_built_in_rules:
         if interactive:
-            click.echo("\nAvailable built-in rules:")
+            click.echo("\nAvailable built-in patterns:")
             click.echo("  ARCH-001: HTTP resilience wrappers")
             click.echo("  ARCH-003: Logging best practices")
+            click.echo("  DI-001: Dependency Injection via Constructor")
+            click.echo("  LAYER-001: Layered Architecture Import Boundaries")
+            click.echo("  REPO-001: Repository Pattern for Data Access")
             click.echo("  PATTERN-DISC-006: Adapter pattern")
             click.echo("  PATTERN-DISC-010: Pipeline pattern")
             click.echo("  PATTERN-DISC-011: Dependency Injection")

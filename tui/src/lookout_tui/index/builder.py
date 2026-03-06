@@ -7,6 +7,7 @@ from pathlib import Path
 
 from lookout.models import PatternSpecFile, RuleSpecFile
 from lookout.rules_loader import get_built_in_patterns_path
+from lookout.semgrep import get_spec_id
 from lookout.specs import SpecUnion, load_specs
 
 from lookout_tui.index.models import PatternIndex, PatternIndexEntry
@@ -61,10 +62,6 @@ def _build_entry(spec: SpecUnion, source_file: str) -> PatternIndexEntry:
     return _entry_from_rule_spec(spec, source_file)
 
 
-def _get_spec_id(spec: SpecUnion) -> str:
-    if isinstance(spec, PatternSpecFile):
-        return str(spec.pattern.id)
-    return str(spec.rule.id)
 
 
 def build_index(
@@ -90,7 +87,7 @@ def build_index(
         if built_in_path.exists():
             specs = load_specs(built_in_path)
             for spec in specs:
-                spec_id = _get_spec_id(spec)
+                spec_id = get_spec_id(spec)
                 # Find the source file by matching ID
                 source = ""
                 for yaml_file in sorted(built_in_path.glob("*.yaml")):
@@ -107,7 +104,7 @@ def build_index(
         if patterns_dir.exists():
             specs = load_specs(patterns_dir)
             for spec in specs:
-                spec_id = _get_spec_id(spec)
+                spec_id = get_spec_id(spec)
                 source = ""
                 for yaml_file in sorted(patterns_dir.glob("*.yaml")):
                     if yaml_file.stem.upper() == spec_id or yaml_file.stem == spec_id:

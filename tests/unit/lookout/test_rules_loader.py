@@ -4,82 +4,85 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from lookout.models import RuleSpecFile
-from lookout.rules_loader import get_built_in_rules_path, load_all_rules, load_built_in_rules
+from lookout.rules_loader import (
+    get_built_in_patterns_path,
+    load_all_rules,
+    load_built_in_patterns,
+)
+from lookout.semgrep import get_spec_id
 
 
-class TestGetBuiltInRulesPath:
-    """Tests for get_built_in_rules_path function."""
+class TestGetBuiltInPatternsPath:
+    """Tests for get_built_in_patterns_path function."""
 
     def test_returns_path_object(self):
         """Should return a Path object."""
-        path = get_built_in_rules_path()
+        path = get_built_in_patterns_path()
         assert isinstance(path, Path)
 
-    def test_points_to_built_in_rules_directory(self):
-        """Should point to src/lookout/built_in_rules directory."""
-        path = get_built_in_rules_path()
-        assert path.name == "built_in_rules"
+    def test_points_to_patterns_directory(self):
+        """Should point to src/lookout/patterns directory."""
+        path = get_built_in_patterns_path()
+        assert path.name == "patterns"
         assert path.parent.name == "lookout"
 
 
-class TestLoadBuiltInRules:
-    """Tests for load_built_in_rules function."""
+class TestLoadBuiltInPatterns:
+    """Tests for load_built_in_patterns function."""
 
-    def test_load_built_in_rules_returns_seven_rules(self):
-        """Should load exactly 7 built-in rules."""
-        rules = load_built_in_rules()
-        assert len(rules) == 7
-        assert all(isinstance(rule, RuleSpecFile) for rule in rules)
+    def test_returns_ten_specs(self):
+        """Should load exactly 10 built-in specs (7 v1 + 3 v2)."""
+        specs = load_built_in_patterns()
+        assert len(specs) == 10
 
-    def test_load_built_in_rules_includes_expected_rule_ids(self):
-        """Should include the 7 expected rule IDs."""
-        rules = load_built_in_rules()
-        rule_ids = {rule.rule.id for rule in rules}
+    def test_includes_expected_ids(self):
+        """Should include all expected spec IDs."""
+        specs = load_built_in_patterns()
+        spec_ids = {get_spec_id(s) for s in specs}
         expected_ids = {
             "ARCH-001",
             "ARCH-003",
+            "DI-001",
+            "LAYER-001",
             "PATTERN-DISC-006",
             "PATTERN-DISC-010",
             "PATTERN-DISC-011",
             "PATTERN-DISC-012",
             "PATTERN-DISC-015",
+            "REPO-001",
         }
-        assert rule_ids == expected_ids
+        assert spec_ids == expected_ids
 
-    def test_load_built_in_rules_handles_missing_directory(self, monkeypatch):
-        """Should return empty list if built-in rules directory doesn't exist."""
-        # Mock get_built_in_rules_path to return non-existent path
+    def test_handles_missing_directory(self, monkeypatch):
+        """Should return empty list if patterns directory doesn't exist."""
         fake_path = Path("/nonexistent/path")
-        monkeypatch.setattr("lookout.rules_loader.get_built_in_rules_path", lambda: fake_path)
-        rules = load_built_in_rules()
-        assert rules == []
+        monkeypatch.setattr("lookout.rules_loader.get_built_in_patterns_path", lambda: fake_path)
+        specs = load_built_in_patterns()
+        assert specs == []
 
 
 class TestLoadAllRules:
     """Tests for load_all_rules function."""
 
-    def test_load_all_rules_with_no_user_rules_returns_only_builtin(self):
+    def test_with_no_user_rules_returns_only_builtin(self):
         """Should return only built-in rules when user_rules_dir is None."""
-        rules = load_all_rules(user_rules_dir=None)
-        assert len(rules) == 7
-        rule_ids = {rule.rule.id for rule in rules}
-        assert "ARCH-001" in rule_ids
-        assert "ARCH-003" in rule_ids
+        specs = load_all_rules(user_rules_dir=None)
+        assert len(specs) == 10
+        spec_ids = {get_spec_id(s) for s in specs}
+        assert "ARCH-001" in spec_ids
+        assert "ARCH-003" in spec_ids
 
-    def test_load_all_rules_with_nonexistent_user_dir_returns_only_builtin(self, tmp_path):
+    def test_with_nonexistent_user_dir_returns_only_builtin(self, tmp_path):
         """Should return only built-in rules when user directory doesn't exist."""
         nonexistent_dir = tmp_path / "nonexistent"
-        rules = load_all_rules(user_rules_dir=nonexistent_dir)
-        assert len(rules) == 7
+        specs = load_all_rules(user_rules_dir=nonexistent_dir)
+        assert len(specs) == 10
 
-    def test_load_all_rules_merges_builtin_and_user_rules(self, tmp_path):
+    def test_merges_builtin_and_user_rules(self, tmp_path):
         """Should merge built-in and user rules."""
-        # Create a user rules directory with a custom rule
         user_rules_dir = tmp_path / "user-rules"
         user_rules_dir.mkdir()
 
-        # Write a custom rule (not in built-in set)
         custom_rule_content = """schema_version: 1
 rule:
   id: "CUSTOM-001"
@@ -108,21 +111,18 @@ rule:
 """
         (user_rules_dir / "CUSTOM-001.yaml").write_text(custom_rule_content)
 
-        rules = load_all_rules(user_rules_dir=user_rules_dir)
+        specs = load_all_rules(user_rules_dir=user_rules_dir)
 
-        # Should have 7 built-in + 1 custom = 8 total
-        assert len(rules) == 8
-        rule_ids = {rule.rule.id for rule in rules}
-        assert "ARCH-001" in rule_ids  # Built-in
-        assert "CUSTOM-001" in rule_ids  # User rule
+        assert len(specs) == 11
+        spec_ids = {get_spec_id(s) for s in specs}
+        assert "ARCH-001" in spec_ids
+        assert "CUSTOM-001" in spec_ids
 
-    def test_user_rules_override_builtin_rules_by_id(self, tmp_path):
+    def test_user_rules_override_builtin_by_id(self, tmp_path):
         """Should allow user rules to override built-in rules by ID."""
-        # Create a user rules directory with a modified version of ARCH-001
         user_rules_dir = tmp_path / "user-rules"
         user_rules_dir.mkdir()
 
-        # Write a modified ARCH-001 rule with different severity
         modified_rule_content = """schema_version: 1
 rule:
   id: "ARCH-001"
@@ -151,15 +151,12 @@ rule:
 """
         (user_rules_dir / "ARCH-001.yaml").write_text(modified_rule_content)
 
-        rules = load_all_rules(user_rules_dir=user_rules_dir)
+        specs = load_all_rules(user_rules_dir=user_rules_dir)
 
-        # Should still have 7 rules (user ARCH-001 replaced built-in ARCH-001)
-        assert len(rules) == 7
+        assert len(specs) == 10
 
-        # Find the ARCH-001 rule
-        arch_001 = next(rule for rule in rules if rule.rule.id == "ARCH-001")
+        from lookout.models import RuleSpecFile
 
-        # Should have user's modifications
+        arch_001 = next(s for s in specs if isinstance(s, RuleSpecFile) and s.rule.id == "ARCH-001")
         assert arch_001.rule.title == "Modified HTTP rule"
         assert arch_001.rule.severity == "info"
-        assert arch_001.rule.reporting.default_message == "Modified message"

@@ -6,7 +6,7 @@ from lookout.models import Finding
 
 def test_filter_findings_removes_known() -> None:
     finding = Finding(
-        guideline_id="ARCH-001",
+        pattern_id="ARCH-001",
         title="HTTP calls require resilience wrappers",
         category="resilience",
         severity="error",

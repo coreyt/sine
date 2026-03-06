@@ -15,7 +15,7 @@ MOCK_MODELS = {
 class TestConfigEditorScreen:
     def test_screen_has_save_binding(self) -> None:
         bindings = {b.key for b in ConfigEditorScreen.BINDINGS}
-        assert "s" in bindings
+        assert "ctrl+s" in bindings
 
     def test_screen_has_escape_binding(self) -> None:
         bindings = {b.key for b in ConfigEditorScreen.BINDINGS}

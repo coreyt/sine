@@ -26,15 +26,15 @@ from lookout.runner import (
 )
 
 
-def _finding(guideline_id: str = "ARCH-001", file: str = "src/app.py", line: int = 10) -> Finding:
+def _finding(pattern_id: str = "ARCH-001", file: str = "src/app.py", line: int = 10) -> Finding:
     return Finding(
-        guideline_id=guideline_id,
+        pattern_id=pattern_id,
         title="Test Rule",
         category="architecture",
         severity="error",
         file=file,
         line=line,
-        message=f"Violation of {guideline_id}",
+        message=f"Violation of {pattern_id}",
         snippet="some_call()",
         engine="semgrep",
         tier=1,
@@ -124,7 +124,7 @@ class TestFormatFindingsText:
         assert result == "No violations found."
 
     def test_formats_each_finding_with_location_and_id(self) -> None:
-        findings = [_finding(guideline_id="ARCH-001", file="src/app.py", line=42)]
+        findings = [_finding(pattern_id="ARCH-001", file="src/app.py", line=42)]
         result = format_findings_text(findings)
 
         assert "src/app.py:42" in result

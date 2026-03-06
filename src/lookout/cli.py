@@ -203,7 +203,9 @@ def discover(rules_dir: Path | None, target: tuple[Path, ...], fail_on_rule_erro
     specs = load_all_rules(user_rules_dir=final_rules_dir if final_rules_dir.exists() else None)
 
     # Filter to only discovery specs
-    discovery_specs = [s for s in specs if s.rule.check.type == "pattern_discovery"]
+    from lookout.specs import is_discovery_spec
+
+    discovery_specs = [s for s in specs if is_discovery_spec(s)]
 
     if not discovery_specs:
         click.echo(f"No pattern discovery specifications found in {final_rules_dir}", err=True)
@@ -213,7 +215,6 @@ def discover(rules_dir: Path | None, target: tuple[Path, ...], fail_on_rule_erro
     _, _, instances, errors, _ = run_lookout(
         specs=discovery_specs,
         targets=final_target,
-        discovery_only=True,
     )
 
     # Report rule execution errors
@@ -292,15 +293,21 @@ def init(rules_dir: Path, copy_built_in_rules: bool, non_interactive: bool) -> N
 )
 @click.option(
     "--provider",
-    default="anthropic",
-    help="LLM provider for check generation (anthropic, openai, gemini)",
+    default=None,
+    help="LLM provider for check generation (anthropic, openai, gemini). Defaults to config.",
+)
+@click.option(
+    "--model",
+    default=None,
+    help="LLM model name. Defaults to config or provider default.",
 )
 def promote(
     pattern_id: str,
     patterns_dir: Path | None,
     output_dir: Path | None,
     generate_check: bool,
-    provider: str,
+    provider: str | None,
+    model: str | None,
 ) -> None:
     """Promote a validated pattern to an enforcement rule."""
     config = click.get_current_context().obj["config"]
@@ -326,7 +333,7 @@ def promote(
     check_override = None
     scaffolding = None
     if generate_check:
-        generated = asyncio.run(_generate_check(pattern, provider))
+        generated = asyncio.run(_generate_check(pattern, config, provider, model))
         if generated:
             import json
 
@@ -348,7 +355,9 @@ def promote(
 
 async def _generate_check(
     pattern: ValidatedPattern,
-    provider: str,
+    config: LookoutConfig,
+    provider_override: str | None = None,
+    model_override: str | None = None,
 ) -> GeneratedCheck | None:
     """Generate a RuleCheck using the LLM rule generator.
 
@@ -357,8 +366,17 @@ async def _generate_check(
     from lookout.discovery.extractors.llm import LLMProvider
     from lookout.rule_generator import RuleGenerator
 
+    provider_str = provider_override or config.llm_provider
+    model = model_override or config.llm_model
+
     try:
-        async with RuleGenerator(provider=LLMProvider(provider)) as gen:
+        async with RuleGenerator(
+            provider=LLMProvider(provider_str),
+            model=model,
+            temperature=config.llm_temperature,
+            max_tokens=config.llm_max_tokens,
+            max_retries=config.llm_max_retries,
+        ) as gen:
             return await gen.generate_check(pattern)
     except Exception as e:
         click.echo(f"Warning: {e}", err=True)
@@ -383,8 +401,8 @@ async def _generate_check(
 )
 @click.option(
     "--provider",
-    default="anthropic",
-    help="LLM provider for extraction (anthropic, openai, gemini)",
+    default=None,
+    help="LLM provider for extraction (anthropic, openai, gemini). Defaults to config.",
 )
 @click.option(
     "--patterns-dir",
@@ -411,7 +429,7 @@ def research(
     focus: str,
     category: str,
     languages: tuple[str, ...],
-    provider: str,
+    provider: str | None,
     patterns_dir: Path | None,
     max_results: int,
     no_llm: bool,
@@ -435,16 +453,18 @@ def research(
     """
     config = click.get_current_context().obj["config"]
     final_patterns_dir = patterns_dir or config.patterns_dir
+    resolved_provider = provider or config.llm_provider
 
     patterns = asyncio.run(
         _run_research(
             focus=focus,
             category=category,
             languages=list(languages),
-            provider=provider,
+            provider=resolved_provider,
             no_llm=no_llm,
             max_results=max_results,
             docs_path=docs,
+            config=config,
         )
     )
 
@@ -504,6 +524,7 @@ async def _run_research(
     no_llm: bool,
     max_results: int,
     docs_path: Path | None = None,
+    config: LookoutConfig | None = None,
 ) -> list[DiscoveredPattern]:
     """Async helper that runs the discovery pipeline."""
     from lookout.discovery.agents.base import SearchConstraints, SearchFocus
@@ -516,7 +537,13 @@ async def _run_research(
         from lookout.discovery.extractors.hybrid import HybridExtractor
         from lookout.discovery.extractors.llm import LLMProvider
 
-        extractor_ctx = HybridExtractor(llm_provider=LLMProvider(provider))
+        extractor_ctx = HybridExtractor(
+            llm_provider=LLMProvider(provider),
+            llm_model=config.llm_model if config else None,
+            llm_temperature=config.llm_temperature if config else 0.0,
+            llm_max_tokens=config.llm_max_tokens if config else 4096,
+            llm_max_retries=config.llm_max_retries if config else 3,
+        )
 
     from lookout.discovery.extractors.base import PatternExtractor
 
@@ -631,6 +658,219 @@ def validate(
         f"✓ Validated {pattern_id} (tier {validated.effective_tier})"
         f" — run 'lookout promote {pattern_id}' to create enforcement rule"
     )
+
+
+@cli.group()
+@click.pass_context
+def batch(ctx: click.Context) -> None:
+    """Batch generation of Semgrep checks for pattern registry."""
+    ctx.ensure_object(dict)
+    ctx.obj["config"] = ctx.parent.obj["config"]  # type: ignore[union-attr]
+
+
+def _get_batch_config() -> LookoutConfig:
+    """Get config from the batch command group context."""
+    ctx = click.get_current_context()
+    parent = ctx.parent
+    assert parent is not None
+    config: LookoutConfig = parent.obj["config"]
+    return config
+
+
+@batch.command("submit")
+@click.option("--languages", required=True, help="Comma-separated languages")
+@click.option("--frameworks", multiple=True, help="language:fw1,fw2 pairs")
+@click.option("--all-missing", is_flag=True, help="Select all MISSING cells")
+@click.option("--all-stale", is_flag=True, help="Select all stale + missing cells")
+@click.option("--dry-run", is_flag=True, help="Show what would be submitted")
+@click.option(
+    "--rules-dir",
+    type=click.Path(path_type=Path),
+    help="Directory containing pattern specs",
+)
+def batch_submit(
+    languages: str,
+    frameworks: tuple[str, ...],
+    all_missing: bool,
+    all_stale: bool,
+    dry_run: bool,
+    rules_dir: Path | None,
+) -> None:
+    """Submit a batch of check generation requests."""
+    from lookout.batch.models import CellStatus
+    from lookout.batch.orchestrator import BatchOrchestrator
+
+    config = _get_batch_config()
+    final_rules_dir = rules_dir or config.rules_dir
+
+    lang_list = [lang.strip() for lang in languages.split(",")]
+    fw_map: dict[str, list[str]] = {}
+    for fw_spec in frameworks:
+        fw_lang, fws = fw_spec.split(":", 1)
+        fw_map[fw_lang] = [f.strip() for f in fws.split(",")]
+
+    orch = BatchOrchestrator(config=config, patterns_dir=final_rules_dir)
+    cells = orch.build_grid(lang_list, fw_map)
+
+    # Filter cells
+    if all_stale:
+        cells = [
+            c
+            for c in cells
+            if c.status
+            in (CellStatus.MISSING, CellStatus.POSSIBLY_STALE, CellStatus.LIKELY_STALE)
+        ]
+    elif all_missing:
+        cells = [c for c in cells if c.status == CellStatus.MISSING]
+
+    if not cells:
+        click.echo("No cells selected for batch generation.")
+        return
+
+    missing = sum(1 for c in cells if c.status == CellStatus.MISSING)
+    stale = sum(
+        1
+        for c in cells
+        if c.status in (CellStatus.POSSIBLY_STALE, CellStatus.LIKELY_STALE)
+    )
+
+    click.echo(f"{len(cells)} cell(s) selected ({missing} missing, {stale} stale)")
+
+    if dry_run:
+        for c in cells:
+            fw = c.framework or "generic"
+            click.echo(f"  {c.pattern_id} / {c.language} / {fw} [{c.status.value}]")
+        return
+
+    # Submit
+    job = asyncio.run(orch.submit_batch(cells))
+    jobs_dir = config.batch_jobs_dir
+    orch.save_job(job, jobs_dir)
+    click.echo(f"Submitted batch {job.job_id}")
+    click.echo(f"Job saved to {jobs_dir / f'{job.job_id}.json'}")
+
+
+@batch.command("status")
+@click.argument("job_id")
+@click.option(
+    "--jobs-dir",
+    type=click.Path(path_type=Path),
+    help="Directory containing batch job files",
+)
+def batch_status(job_id: str, jobs_dir: Path | None) -> None:
+    """Check the status of a batch job."""
+    from lookout.batch.orchestrator import BatchOrchestrator
+
+    config = _get_batch_config()
+    final_jobs_dir = jobs_dir or config.batch_jobs_dir
+
+    job_path = final_jobs_dir / f"{job_id}.json"
+    if not job_path.exists():
+        click.echo(f"Job {job_id} not found in {final_jobs_dir}", err=True)
+        sys.exit(1)
+
+    orch = BatchOrchestrator(config=config, patterns_dir=config.rules_dir)
+    job = orch.load_job(job_path)
+
+    click.echo(f"Batch {job.job_id} ({job.provider}/{job.model})")
+    click.echo(f"Status: {job.status.value}")
+    if job.request_counts:
+        parts = [f"{v} {k}" for k, v in job.request_counts.items() if v]
+        click.echo(f"Counts: {', '.join(parts)}")
+    click.echo(f"Requests: {len(job.requests)}")
+
+
+@batch.command("list")
+@click.option(
+    "--jobs-dir",
+    type=click.Path(path_type=Path),
+    help="Directory containing batch job files",
+)
+def batch_list(jobs_dir: Path | None) -> None:
+    """List all batch jobs."""
+    config = _get_batch_config()
+    final_jobs_dir = jobs_dir or config.batch_jobs_dir
+
+    if not final_jobs_dir.exists():
+        click.echo("No batch jobs found.")
+        return
+
+    import json
+
+    job_files = sorted(final_jobs_dir.glob("*.json"))
+    if not job_files:
+        click.echo("No batch jobs found.")
+        return
+
+    for f in job_files:
+        with f.open("r") as fh:
+            data = json.load(fh)
+        count = data.get("request_count", len(data.get("requests", [])))
+        click.echo(
+            f"  {data['job_id']}  {data['status']}  "
+            f"{data['provider']}/{data['model']}  "
+            f"{count} requests"
+        )
+
+
+@batch.command("results")
+@click.argument("job_id")
+@click.option(
+    "--jobs-dir",
+    type=click.Path(path_type=Path),
+    help="Directory containing batch job files",
+)
+@click.option(
+    "--rules-dir",
+    type=click.Path(path_type=Path),
+    help="Directory containing pattern specs",
+)
+def batch_results(job_id: str, jobs_dir: Path | None, rules_dir: Path | None) -> None:
+    """Retrieve and apply results from a completed batch."""
+    from lookout.batch.orchestrator import BatchOrchestrator
+
+    config = _get_batch_config()
+    final_jobs_dir = jobs_dir or config.batch_jobs_dir
+    final_rules_dir = rules_dir or config.rules_dir
+    job_path = final_jobs_dir / f"{job_id}.json"
+    if not job_path.exists():
+        click.echo(f"Job {job_id} not found in {final_jobs_dir}", err=True)
+        sys.exit(1)
+
+    orch = BatchOrchestrator(config=config, patterns_dir=final_rules_dir)
+    job = orch.load_job(job_path)
+    job = asyncio.run(orch.retrieve_results(job))
+    orch.save_job(job, final_jobs_dir)
+
+    succeeded = sum(1 for r in job.results if r.success)
+    failed = sum(1 for r in job.results if not r.success)
+    click.echo(f"Retrieved {len(job.results)} results: {succeeded} succeeded, {failed} failed")
+
+
+@batch.command("cancel")
+@click.argument("job_id")
+@click.option(
+    "--jobs-dir",
+    type=click.Path(path_type=Path),
+    help="Directory containing batch job files",
+)
+def batch_cancel(job_id: str, jobs_dir: Path | None) -> None:
+    """Cancel a batch job."""
+    from lookout.batch.orchestrator import BatchOrchestrator
+
+    config = _get_batch_config()
+    final_jobs_dir = jobs_dir or config.batch_jobs_dir
+
+    job_path = final_jobs_dir / f"{job_id}.json"
+    if not job_path.exists():
+        click.echo(f"Job {job_id} not found in {final_jobs_dir}", err=True)
+        sys.exit(1)
+
+    orch = BatchOrchestrator(config=config, patterns_dir=config.rules_dir)
+    job = orch.load_job(job_path)
+
+    asyncio.run(orch.cancel_batch(job))
+    click.echo(f"Cancelled batch {job_id}")
 
 
 if __name__ == "__main__":

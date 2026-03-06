@@ -15,8 +15,9 @@ class ConfigEditorScreen(Screen[None]):
     """Configuration editor for LLM settings."""
 
     BINDINGS = [
-        Binding("s", "save", "Save"),
-        Binding("escape", "app.pop_screen", "Back"),
+        Binding("ctrl+s", "save", "Save", key_display="^s"),
+        Binding("escape", "app.go_home", "Home"),
+        Binding("f3", "app.go_home", "Home", show=False),
     ]
 
     def __init__(self) -> None:

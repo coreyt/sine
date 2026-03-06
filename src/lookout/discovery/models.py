@@ -256,7 +256,7 @@ class SemgrepRule(BaseModel):
     message: str = Field(..., description="Message shown on violation")
     severity: Literal["ERROR", "WARNING", "INFO"]
     metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Metadata (guideline_id, tier, category, etc.)"
+        default_factory=dict, description="Metadata (pattern_id, tier, category, etc.)"
     )
 
 

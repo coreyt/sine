@@ -11,7 +11,7 @@ from lookout.models import Finding
 
 @dataclass(frozen=True)
 class BaselineEntry:
-    guideline_id: str
+    pattern_id: str
     file: str
     line: int
     hash: str
@@ -30,13 +30,13 @@ class Baseline:
             "version": 1,
             "violations": [
                 {
-                    "guideline_id": entry.guideline_id,
+                    "pattern_id": entry.pattern_id,
                     "file": entry.file,
                     "line": entry.line,
                     "hash": entry.hash,
                 }
                 for entry in sorted(
-                    self.entries, key=lambda item: (item.guideline_id, item.file, item.line)
+                    self.entries, key=lambda item: (item.pattern_id, item.file, item.line)
                 )
             ],
         }
@@ -51,7 +51,7 @@ def load_baseline(path: Path = BASELINE_PATH) -> Baseline | None:
     data = json.loads(path.read_text(encoding="utf-8"))
     entries = {
         BaselineEntry(
-            guideline_id=item["guideline_id"],
+            pattern_id=item.get("pattern_id", item.get("guideline_id", "")),
             file=item["file"],
             line=item["line"],
             hash=item["hash"],
@@ -75,10 +75,10 @@ def filter_findings(findings: list[Finding], baseline: Baseline | None) -> list[
 
 
 def _entry_from_finding(finding: Finding) -> BaselineEntry:
-    fingerprint = f"{finding.guideline_id}|{finding.file}|{finding.line}|{finding.message}"
+    fingerprint = f"{finding.pattern_id}|{finding.file}|{finding.line}|{finding.message}"
     hash_value = hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()[:8]
     return BaselineEntry(
-        guideline_id=finding.guideline_id,
+        pattern_id=finding.pattern_id,
         file=finding.file,
         line=finding.line,
         hash=hash_value,

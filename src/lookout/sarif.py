@@ -22,9 +22,9 @@ def format_findings_sarif(findings: list[Finding], version: str = "0.1.0") -> st
 
     for finding in findings:
         # Register rule if not seen
-        if finding.guideline_id not in rules:
-            rules[finding.guideline_id] = {
-                "id": finding.guideline_id,
+        if finding.pattern_id not in rules:
+            rules[finding.pattern_id] = {
+                "id": finding.pattern_id,
                 "shortDescription": {"text": finding.title},
                 "properties": {
                     "category": finding.category,
@@ -35,7 +35,7 @@ def format_findings_sarif(findings: list[Finding], version: str = "0.1.0") -> st
         # Create result
         results.append(
             {
-                "ruleId": finding.guideline_id,
+                "ruleId": finding.pattern_id,
                 "level": _map_severity_to_sarif(finding.severity),
                 "message": {"text": finding.message},
                 "locations": [

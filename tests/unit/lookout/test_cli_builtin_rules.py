@@ -37,7 +37,7 @@ class TestCheckWithBuiltInRules:
             assert isinstance(output, list)
             # Should detect print() violation from ARCH-003
             assert len(output) > 0
-            assert any(f.get("guideline_id") == "ARCH-003" for f in output)
+            assert any(f.get("pattern_id") == "ARCH-003" for f in output)
 
     def test_check_gracefully_handles_missing_rules_dir(self, tmp_path, monkeypatch):
         """Should load built-in rules when .lookout-rules doesn't exist."""

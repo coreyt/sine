@@ -8,13 +8,15 @@ from pathlib import Path
 import yaml
 
 from lookout.baseline import BASELINE_PATH, Baseline, filter_findings, load_baseline, write_baseline
-from lookout.models import Finding, PatternInstance, RuleError, RuleSpecFile
+from lookout.models import Finding, PatternInstance, RuleError
 from lookout.semgrep import (
     build_semgrep_command,
+    build_spec_index,
     compile_semgrep_config,
     parse_semgrep_output,
     render_dry_run,
 )
+from lookout.specs import SpecUnion, is_discovery_spec
 
 
 def check_semgrep_version() -> str | None:
@@ -31,7 +33,7 @@ def check_semgrep_version() -> str | None:
 
 
 def run_lookout(
-    specs: list[RuleSpecFile],
+    specs: list[SpecUnion],
     targets: list[Path],
     dry_run: bool = False,
     update_baseline: bool = False,
@@ -40,7 +42,7 @@ def run_lookout(
     """Run Lookout checks (enforcement and/or discovery).
 
     Args:
-        specs: List of rule specifications to check
+        specs: List of rule/pattern specifications to check
         targets: Paths to analyze
         dry_run: If True, show compiled rules without running
         update_baseline: If True, update baseline with current findings
@@ -49,9 +51,8 @@ def run_lookout(
     Returns:
         Tuple of (all_findings, new_findings, pattern_instances, errors, dry_run_output)
     """
-    # Filter specs based on mode
     if discovery_only:
-        specs = [s for s in specs if s.rule.check.type == "pattern_discovery"]
+        specs = [s for s in specs if is_discovery_spec(s)]
 
     config = compile_semgrep_config(specs)
     with tempfile.TemporaryDirectory(prefix="lookout-") as temp_dir:
@@ -63,17 +64,13 @@ def run_lookout(
         config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
         command = build_semgrep_command(config_path, targets)
         result = subprocess.run(command, capture_output=True, text=True, check=False)
-        # Semgrep returns:
-        # 0: Success, no issues found (unless --error is set)
-        # 1: Issues found (if --error is set or implied)
-        # 2: Semgrep failed (e.g. parse error in rules) - but may still have results
         if result.returncode not in (0, 1, 2):
             raise RuntimeError(
                 f"Semgrep execution failed with code {result.returncode}:\n{result.stderr.strip()}"
             )
 
-        spec_index = {spec.rule.id: spec for spec in specs}
-        findings, pattern_instances, errors = parse_semgrep_output(result.stdout, spec_index)
+        spec_idx = build_spec_index(specs)
+        findings, pattern_instances, errors = parse_semgrep_output(result.stdout, spec_idx)
         baseline = load_baseline(BASELINE_PATH)
         new_findings = filter_findings(findings, baseline)
 
@@ -89,7 +86,7 @@ def format_findings_text(findings: list[Finding]) -> str:
         return "No violations found."
     lines = []
     for finding in findings:
-        lines.append(f"{finding.file}:{finding.line} [{finding.guideline_id}] {finding.message}")
+        lines.append(f"{finding.file}:{finding.line} [{finding.pattern_id}] {finding.message}")
     return "\n".join(lines)
 
 

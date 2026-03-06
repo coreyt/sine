@@ -147,7 +147,7 @@ class TestCopyBuiltInRulesToLocal:
 
         # Should copy all 7 rules
         rule_files = list(rules_dir.glob("*.yaml"))
-        assert len(rule_files) == 7
+        assert len(rule_files) == 10
 
         # Should include expected rules
         rule_names = {f.name for f in rule_files}
@@ -235,7 +235,7 @@ class TestRunInit:
         # Should copy rules
         rules_dir = project_dir / ".lookout-rules"
         rule_files = list(rules_dir.glob("*.yaml"))
-        assert len(rule_files) == 7
+        assert len(rule_files) == 10
 
     def test_run_init_for_python_project_uses_pyproject(self, tmp_path, monkeypatch):
         """Should use pyproject.toml for Python projects in non-interactive mode."""

@@ -69,7 +69,7 @@ def test_enforce_dependency_injection_violation():
         )
 
         assert len(findings) == 1
-        assert findings[0].guideline_id == "ARCH-DI-001"
+        assert findings[0].pattern_id == "ARCH-DI-001"
         assert findings[0].file == str(target_path)
         assert "Hardcoded dependency detected" in findings[0].message
 

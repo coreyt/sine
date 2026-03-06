@@ -1,0 +1,175 @@
+schema_version: 2
+
+pattern:
+  id: "DI-001"
+  title: "Dependency Injection via Constructor"
+  description: |
+    Classes should receive dependencies through their constructor parameters
+    rather than creating them internally. This enables testing with mocks,
+    improves flexibility, and makes dependency relationships explicit.
+  rationale: |
+    Hard-coded dependencies make classes difficult to test in isolation,
+    tightly couple components, and hide the dependency graph. Constructor
+    injection makes dependencies visible and swappable.
+  version: "1.0.0"
+  tier: 2
+  category: "architecture"
+  subcategory: "dependency-injection"
+  severity: "warning"
+  tags:
+    - solid
+    - testability
+    - decoupling
+
+  reporting:
+    default_message: "Direct dependency instantiation in constructor — use injection instead (DI-001)"
+    confidence: "medium"
+
+  references:
+    - "https://martinfowler.com/articles/injection.html"
+    - "https://en.wikipedia.org/wiki/Dependency_injection"
+
+  variants:
+    - language: python
+      version_constraint: ">=3.10"
+
+      generic:
+        check:
+          type: "raw"
+          config: |
+            rules:
+              - id: di-001-python-impl
+                languages: [python]
+                severity: WARNING
+                message: >-
+                  Direct dependency instantiation in constructor —
+                  use injection instead (DI-001)
+                patterns:
+                  - pattern: |
+                      class $CLS:
+                        def __init__(self, ...):
+                          self.$FIELD = $DEP(...)
+        examples:
+          good:
+            - language: python
+              code: |
+                class OrderService:
+                    def __init__(self, repo: OrderRepository):
+                        self._repo = repo
+          bad:
+            - language: python
+              code: |
+                class OrderService:
+                    def __init__(self):
+                        self._repo = OrderRepository()
+
+      frameworks:
+        - name: django
+          version_constraint: ">=4.0"
+          check:
+            type: "raw"
+            config: |
+              rules:
+                - id: di-001-python-django-impl
+                  languages: [python]
+                  severity: WARNING
+                  message: >-
+                    Django view creates service directly in constructor —
+                    use injection instead (DI-001)
+                  patterns:
+                    - pattern: |
+                        class $VIEW(View):
+                          def __init__(self, ...):
+                            self.$SVC = $SVC_CLASS(...)
+          examples:
+            good:
+              - language: python
+                code: |
+                  class OrderView(View):
+                      def __init__(self, order_service: OrderService, **kwargs):
+                          super().__init__(**kwargs)
+                          self.order_service = order_service
+            bad:
+              - language: python
+                code: |
+                  class OrderView(View):
+                      def __init__(self, **kwargs):
+                          super().__init__(**kwargs)
+                          self.order_service = OrderService()
+
+    - language: typescript
+      version_constraint: ">=4.0"
+
+      generic:
+        check:
+          type: "raw"
+          config: |
+            rules:
+              - id: di-001-typescript-impl
+                languages: [typescript]
+                severity: WARNING
+                message: >-
+                  Direct dependency instantiation in constructor —
+                  use injection instead (DI-001)
+                patterns:
+                  - pattern: |
+                      class $CLS {
+                        constructor(...) {
+                          this.$FIELD = new $DEP(...);
+                        }
+                      }
+        examples:
+          good:
+            - language: typescript
+              code: |
+                class OrderService {
+                  constructor(private readonly repo: OrderRepository) {}
+                }
+          bad:
+            - language: typescript
+              code: |
+                class OrderService {
+                  private repo: OrderRepository;
+                  constructor() {
+                    this.repo = new OrderRepository();
+                  }
+                }
+
+      frameworks:
+        - name: angular
+          version_constraint: ">=14.0"
+          check:
+            type: "raw"
+            config: |
+              rules:
+                - id: di-001-typescript-angular-impl
+                  languages: [typescript]
+                  severity: WARNING
+                  message: >-
+                    Angular service creates dependency directly —
+                    use Angular DI instead (DI-001)
+                  patterns:
+                    - pattern: |
+                        @Injectable(...)
+                        class $CLS {
+                          constructor(...) {
+                            this.$FIELD = new $DEP(...);
+                          }
+                        }
+          examples:
+            good:
+              - language: typescript
+                code: |
+                  @Injectable({ providedIn: 'root' })
+                  class OrderService {
+                    constructor(private readonly repo: OrderRepository) {}
+                  }
+            bad:
+              - language: typescript
+                code: |
+                  @Injectable({ providedIn: 'root' })
+                  class OrderService {
+                    constructor() {
+                      this.repo = new OrderRepository();
+                    }
+                  }

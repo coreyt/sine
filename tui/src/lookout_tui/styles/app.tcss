@@ -19,6 +19,55 @@ Screen {
     margin: 0 1;
 }
 
+/* Dashboard layout (§11.1) */
+#dashboard-metrics {
+    dock: top;
+    height: 3;
+    background: $surface-darken-1;
+    padding: 0 1;
+}
+
+#dashboard-metrics Static {
+    width: 1fr;
+    height: 3;
+    padding: 1 2;
+    content-align: left middle;
+}
+
+#dashboard-main {
+    height: 1fr;
+    padding: 0;
+}
+
+#dashboard-guide {
+    width: 60%;
+    padding: 1 2;
+    overflow-y: auto;
+}
+
+#dashboard-quick-ref {
+    width: 40%;
+    padding: 1 2;
+    border-left: solid $primary-darken-2;
+    overflow-y: auto;
+}
+
+/* Compact: stack guide/quick-ref vertically */
+.compact #dashboard-quick-ref {
+    display: none;
+}
+.compact #dashboard-guide {
+    width: 100%;
+}
+
+/* Standard: narrower quick-ref */
+.standard #dashboard-guide {
+    width: 65%;
+}
+.standard #dashboard-quick-ref {
+    width: 35%;
+}
+
 /* Browser layout */
 #browser-main {
     height: 1fr;
@@ -75,6 +124,30 @@ Screen {
     height: 1fr;
 }
 
+/* Registry layout */
+#registry-main {
+    height: 1fr;
+}
+
+#registry-tree-panel {
+    width: 30%;
+    border-right: solid $primary-darken-2;
+}
+
+#registry-tree {
+    height: 1fr;
+}
+
+#registry-context-panel {
+    width: 70%;
+    padding: 1;
+    overflow-y: auto;
+}
+
+#context-panel {
+    height: 1fr;
+}
+
 /* Model selector */
 #model-selector, #config-model-selector {
     dock: top;
@@ -91,8 +164,76 @@ Screen {
     margin: 0 0 1 0;
 }
 
+/* Batch grid layout */
+#batch-main {
+    height: 1fr;
+}
+
+#batch-table {
+    height: 1fr;
+}
+
+#batch-status {
+    dock: bottom;
+    height: 3;
+    padding: 0 1;
+    background: $surface-darken-1;
+}
+
 /* Placeholder screens */
 #placeholder {
     padding: 2;
     text-align: center;
+}
+
+/* ── Responsive breakpoints (§1.6) ──────────────────────── */
+
+/* Compact: <80 cols — collapse sidebars */
+.compact #table-panel {
+    display: none;
+}
+.compact #detail-panel {
+    width: 100%;
+}
+.compact #queue-panel {
+    display: none;
+}
+.compact #stage-panel {
+    width: 100%;
+}
+.compact #registry-tree-panel {
+    display: none;
+}
+.compact #registry-context-panel {
+    width: 100%;
+}
+
+/* Standard: 80–119 — narrow sidebars */
+.standard #table-panel {
+    width: 40%;
+}
+.standard #detail-panel {
+    width: 60%;
+}
+.standard #registry-tree-panel {
+    width: 25%;
+}
+.standard #registry-context-panel {
+    width: 75%;
+}
+
+/* Expanded: 120–159 — default layout (already defined above) */
+
+/* Wide: 160+ — wider sidebars */
+.wide #table-panel {
+    width: 50%;
+}
+.wide #detail-panel {
+    width: 50%;
+}
+.wide #registry-tree-panel {
+    width: 35%;
+}
+.wide #registry-context-panel {
+    width: 65%;
 }

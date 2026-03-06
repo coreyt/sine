@@ -1,68 +1,21 @@
-"""Prompt template loader and renderer."""
+"""Prompt template loader and renderer — delegates to shared lookout.prompts."""
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
+from lookout.prompts import PromptTemplateLoader
 
-class PromptTemplate:
-    """Loads and renders prompt templates from markdown files.
 
-    Templates use {{VARIABLE}} placeholders and wrap content in code fences.
-    The loader extracts content between the first ``` and last ``` markers.
+class PromptTemplate(PromptTemplateLoader):
+    """TUI-specific prompt template with convenience methods.
+
+    Extends the shared PromptTemplateLoader with domain-specific
+    rendering methods for the generation pipeline.
     """
 
     def __init__(self, prompts_dir: Path) -> None:
-        self.prompts_dir = prompts_dir
-        self._cache: dict[str, str] = {}
-
-    def load(self, filename: str) -> str:
-        """Load a prompt template file and extract content from code fences.
-
-        Args:
-            filename: Template filename (e.g., "system-prompt-pattern-research.md")
-
-        Returns:
-            Raw template content with code fences stripped.
-
-        Raises:
-            FileNotFoundError: If template file doesn't exist.
-        """
-        if filename in self._cache:
-            return self._cache[filename]
-
-        filepath = self.prompts_dir / filename
-        raw = filepath.read_text()
-        content = self._strip_code_fences(raw)
-        self._cache[filename] = content
-        return content
-
-    def render(self, filename: str, **variables: str) -> str:
-        """Load a template and substitute {{VARIABLE}} placeholders.
-
-        Args:
-            filename: Template filename.
-            **variables: Key-value pairs for substitution. Keys should match
-                placeholder names (e.g., PATTERN_ID="ARCH-001").
-
-        Returns:
-            Rendered template string.
-
-        Raises:
-            ValueError: If template contains unresolved placeholders.
-        """
-        template = self.load(filename)
-        result = template
-        for key, value in variables.items():
-            result = result.replace(f"{{{{{key}}}}}", value)
-
-        # Check for unresolved placeholders
-        unresolved = re.findall(r"\{\{([A-Z0-9_]+)\}\}", result)
-        if unresolved:
-            raise ValueError(f"Unresolved template variables: {', '.join(unresolved)}")
-
-        return result
+        super().__init__(prompts_dir)
 
     def render_system_prompt(self) -> str:
         """Render the system prompt (no variables needed)."""
@@ -117,19 +70,3 @@ class PromptTemplate:
             FRAMEWORK_VERSION_CONSTRAINT_OR_SKIP=framework_version_constraint,
             PATTERN_ID_LOWER=pattern_id_lower,
         )
-
-    @staticmethod
-    def _strip_code_fences(raw: str) -> str:
-        """Extract content between first and last ``` markers."""
-        lines = raw.split("\n")
-        fence_indices: list[int] = []
-        for i, line in enumerate(lines):
-            if line.strip().startswith("```"):
-                fence_indices.append(i)
-
-        if len(fence_indices) >= 2:
-            start = fence_indices[0] + 1
-            end = fence_indices[-1]
-            return "\n".join(lines[start:end])
-
-        return raw

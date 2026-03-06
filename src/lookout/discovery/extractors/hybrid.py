@@ -56,6 +56,7 @@ class HybridExtractor(PatternExtractor):
         keyword_max_results: int = 10,
         llm_temperature: float = 0.0,
         llm_max_tokens: int = 4096,
+        llm_max_retries: int = 3,
     ):
         """Initialize the hybrid extractor.
 
@@ -67,6 +68,7 @@ class HybridExtractor(PatternExtractor):
             keyword_max_results: Maximum patterns from keyword stage
             llm_temperature: LLM temperature
             llm_max_tokens: LLM max tokens
+            llm_max_retries: LLM max retry attempts
         """
         self.min_keyword_confidence = min_keyword_confidence
         self.keyword_max_results = keyword_max_results
@@ -80,6 +82,7 @@ class HybridExtractor(PatternExtractor):
                 api_key=llm_api_key,
                 temperature=llm_temperature,
                 max_tokens=llm_max_tokens,
+                max_retries=llm_max_retries,
             )
         except ValueError:
             logger.warning("LLM API key not available; HybridExtractor will use keyword-only mode")

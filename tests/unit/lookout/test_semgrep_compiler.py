@@ -94,7 +94,7 @@ def test_parse_semgrep_output_normalizes_string_snippet() -> None:
     assert findings[0].snippet == "requests.get(url)"
 
 
-def test_parse_semgrep_output_maps_multi_segment_guideline_ids() -> None:
+def test_parse_semgrep_output_maps_multi_segment_pattern_ids() -> None:
     spec = RuleSpecFile(
         schema_version=1,
         rule=RuleSpec(
@@ -131,4 +131,4 @@ def test_parse_semgrep_output_maps_multi_segment_guideline_ids() -> None:
 
     findings, pattern_instances, errors = parse_semgrep_output(output, {"PY-SEC-001": spec})
     assert len(findings) == 1
-    assert findings[0].guideline_id == "PY-SEC-001"
+    assert findings[0].pattern_id == "PY-SEC-001"

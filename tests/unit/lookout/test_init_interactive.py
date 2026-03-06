@@ -143,7 +143,7 @@ class TestRunInitInteractive:
         run_init(rules_dir=Path(".lookout-rules"), copy_built_in_rules=True, interactive=True)
 
         rules = list((project_dir / ".lookout-rules").glob("*.yaml"))
-        assert len(rules) == 7
+        assert len(rules) == 10
 
     def test_interactive_mode_copies_all_when_selective_not_chosen(
         self, tmp_path, monkeypatch
@@ -162,7 +162,7 @@ class TestRunInitInteractive:
         run_init(rules_dir=Path(".lookout-rules"), copy_built_in_rules=True, interactive=True)
 
         rules = list((project_dir / ".lookout-rules").glob("*.yaml"))
-        assert len(rules) == 7
+        assert len(rules) == 10
 
     def test_interactive_mode_selective_copy_by_id(self, tmp_path, monkeypatch) -> None:
         project_dir = tmp_path / "proj"
@@ -201,4 +201,4 @@ class TestRunInitInteractive:
         run_init(rules_dir=Path(".lookout-rules"), copy_built_in_rules=True, interactive=True)
 
         rules = list((project_dir / ".lookout-rules").glob("*.yaml"))
-        assert len(rules) == 7
+        assert len(rules) == 10

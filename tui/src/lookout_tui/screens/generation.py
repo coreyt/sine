@@ -13,6 +13,7 @@ from textual.widgets import DataTable, Footer, Header, Static
 
 from lookout_tui.clients.litellm_client import LiteLLMClient
 from lookout_tui.clients.protocol import LLMClient
+from lookout_tui.keys import ci
 from lookout_tui.pipeline.generator import GenerationPipeline
 from lookout_tui.pipeline.models import (
     GenerationJob,
@@ -31,12 +32,15 @@ class GenerationPipelineScreen(Screen[None]):
     """Run and review the three-stage generation pipeline."""
 
     BINDINGS = [
-        Binding("n", "new_job", "New Job"),
-        Binding("a", "approve", "Approve"),
-        Binding("r", "reject", "Reject"),
-        Binding("t", "retry", "Retry"),
-        Binding("w", "write_yaml", "Write YAML"),
-        Binding("escape", "app.pop_screen", "Back"),
+        *ci("a", "new_job", "Add Job"),
+        Binding("ctrl+a", "approve", "Approve", key_display="^a"),
+        Binding("ctrl+x", "reject", "Reject", key_display="^x"),
+        *ci("t", "retry", "Retry"),
+        *ci("w", "write_yaml", "Write YAML"),
+        *ci("r", "refresh_view", "Refresh"),
+        Binding("f5", "refresh_view", "Refresh", show=False),
+        Binding("escape", "app.go_home", "Home"),
+        Binding("f3", "app.go_home", "Home", show=False),
     ]
 
     def __init__(self) -> None:
@@ -127,6 +131,10 @@ class GenerationPipelineScreen(Screen[None]):
         async with self._pipeline_lock:
             self._client = None
             self._pipeline = None
+
+    def action_refresh_view(self) -> None:
+        self._refresh_queue()
+        self._refresh_stage_view()
 
     def action_new_job(self) -> None:
         """Create a new generation job (simple dialog via notify)."""

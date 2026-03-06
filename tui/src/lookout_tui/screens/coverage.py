@@ -12,7 +12,7 @@ class CoverageMatrixScreen(Screen[None]):
     """Coverage matrix — coming soon."""
 
     BINDINGS = [
-        Binding("escape", "app.pop_screen", "Back"),
+        Binding("escape", "app.go_home", "Home"),
     ]
 
     def compose(self) -> ComposeResult:

@@ -41,7 +41,7 @@ def _spec() -> RuleSpecFile:
 
 def _finding(message: str = "eval forbidden (ARCH-010)") -> Finding:
     return Finding(
-        guideline_id="ARCH-010",
+        pattern_id="ARCH-010",
         title="Avoid eval",
         category="security",
         severity="error",

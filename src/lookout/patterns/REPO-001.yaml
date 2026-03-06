@@ -1,0 +1,130 @@
+schema_version: 2
+
+pattern:
+  id: "REPO-001"
+  title: "Repository Pattern for Data Access"
+  description: |
+    All database and data store access should go through repository classes.
+    Raw queries, ORM calls, and direct database operations must not appear
+    in service, controller, or handler code.
+  rationale: |
+    The repository pattern decouples business logic from data access
+    implementation details, making it possible to swap storage backends,
+    test with in-memory fakes, and maintain a clean separation of concerns.
+  version: "1.0.0"
+  tier: 2
+  category: "architecture"
+  subcategory: "repository-pattern"
+  severity: "warning"
+  tags:
+    - data-access
+    - separation-of-concerns
+    - testability
+
+  reporting:
+    default_message: "Direct data access outside repository class — use a repository instead (REPO-001)"
+    confidence: "medium"
+
+  references:
+    - "https://martinfowler.com/eaaCatalog/repository.html"
+    - "https://www.cosmicpython.com/book/chapter_02_repository.html"
+
+  variants:
+    - language: python
+      version_constraint: ">=3.10"
+
+      generic:
+        check:
+          type: "pattern_discovery"
+          patterns:
+            - |
+              class $CLS:
+                def $METHOD(self, ...):
+                  ...
+                  $DB.execute(...)
+            - |
+              cursor.execute(...)
+        examples:
+          good:
+            - language: python
+              code: |
+                class OrderRepository:
+                    def find_by_id(self, order_id: str) -> Order:
+                        return self._session.query(Order).get(order_id)
+
+                class OrderService:
+                    def __init__(self, repo: OrderRepository):
+                        self._repo = repo
+
+                    def get_order(self, order_id: str) -> Order:
+                        return self._repo.find_by_id(order_id)
+          bad:
+            - language: python
+              code: |
+                class OrderService:
+                    def get_order(self, order_id: str) -> Order:
+                        return self._session.query(Order).get(order_id)
+
+      frameworks:
+        - name: sqlalchemy
+          version_constraint: ">=2.0"
+          check:
+            type: "raw"
+            config: |
+              rules:
+                - id: repo-001-python-sqlalchemy-impl
+                  languages: [python]
+                  severity: WARNING
+                  message: >-
+                    SQLAlchemy session used outside repository class —
+                    use a repository instead (REPO-001)
+                  pattern-either:
+                    - pattern: session.query(...)
+                    - pattern: session.execute(...)
+                    - pattern: session.add(...)
+                    - pattern: session.delete(...)
+          examples:
+            good:
+              - language: python
+                code: |
+                  class OrderRepository:
+                      def save(self, order: Order) -> None:
+                          self._session.add(order)
+            bad:
+              - language: python
+                code: |
+                  class OrderService:
+                      def save_order(self, order: Order) -> None:
+                          self._session.add(order)
+
+    - language: typescript
+      version_constraint: ">=4.0"
+
+      generic:
+        check:
+          type: "pattern_discovery"
+          patterns:
+            - |
+              class $CLS {
+                $METHOD(...) {
+                  ...
+                  $DB.query(...);
+                }
+              }
+        examples:
+          good:
+            - language: typescript
+              code: |
+                class OrderRepository {
+                  async findById(id: string): Promise<Order> {
+                    return this.db.query('SELECT * FROM orders WHERE id = $1', [id]);
+                  }
+                }
+          bad:
+            - language: typescript
+              code: |
+                class OrderService {
+                  async getOrder(id: string): Promise<Order> {
+                    return this.db.query('SELECT * FROM orders WHERE id = $1', [id]);
+                  }
+                }

@@ -36,6 +36,20 @@ class LookoutConfig(BaseModel):
     # Discovery settings
     patterns_dir: Path = Field(default=Path(".lookout-patterns"))
 
+    # LLM settings
+    llm_provider: str = Field(default="anthropic")
+    llm_model: str | None = Field(default=None)
+    llm_temperature: float = Field(default=0.0)
+    llm_max_tokens: int = Field(default=4096)
+    llm_max_retries: int = Field(default=3)
+    llm_timeout: float = Field(default=60.0)
+
+    # Batch settings
+    batch_provider: str | None = Field(default=None)
+    batch_model: str | None = Field(default=None)
+    batch_poll_interval: int = Field(default=60)
+    batch_jobs_dir: Path = Field(default=Path(".lookout-batch-jobs"))
+
     # Integration settings
     repo: str | None = None
 

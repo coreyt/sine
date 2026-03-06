@@ -10,6 +10,7 @@ from textual.widgets import DataTable, Footer, Header, Input, Static
 
 from lookout_tui.index.builder import build_index
 from lookout_tui.index.models import PatternIndex, PatternIndexEntry
+from lookout_tui.keys import ci
 from lookout_tui.widgets.pattern_detail import PatternDetailPanel
 from lookout_tui.widgets.pattern_table import PatternTable
 
@@ -19,11 +20,10 @@ class PatternBrowserScreen(Screen[None]):
 
     BINDINGS = [
         Binding("slash", "focus_filter", "Filter", key_display="/"),
-        Binding("r", "rebuild_index", "Refresh"),
-        Binding("escape", "app.pop_screen", "Back"),
-        Binding("1", "filter_tier('1')", "Tier 1", show=False),
-        Binding("2", "filter_tier('2')", "Tier 2", show=False),
-        Binding("3", "filter_tier('3')", "Tier 3", show=False),
+        *ci("r", "rebuild_index", "Refresh"),
+        Binding("f5", "rebuild_index", "Refresh", show=False),
+        Binding("escape", "app.go_home", "Home"),
+        Binding("f3", "app.go_home", "Home", show=False),
         Binding("0", "filter_tier('0')", "All tiers", show=False),
     ]
 

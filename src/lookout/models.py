@@ -98,11 +98,85 @@ class RuleSpecFile(BaseModel):
     rule: RuleSpec
 
 
+# --- Schema version 2: Hierarchical pattern specs ---
+
+
+class VariantExamples(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    good: list[RuleExample] = Field(default_factory=list)
+    bad: list[RuleExample] = Field(default_factory=list)
+
+
+class GenerationMeta(BaseModel):
+    """Tracks what inputs produced a variant's check."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    input_hash: str
+    generated_at: str
+    model: str
+    batch_id: str | None = None
+
+
+class GenericVariant(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    check: RuleCheck
+    examples: VariantExamples
+    generation_meta: GenerationMeta | None = None
+
+
+class FrameworkVariant(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    version_constraint: str | None = None
+    check: RuleCheck
+    examples: VariantExamples
+    generation_meta: GenerationMeta | None = None
+
+
+class LanguageVariant(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    language: str
+    version_constraint: str | None = None
+    generic: GenericVariant | None = None
+    frameworks: list[FrameworkVariant] = Field(default_factory=list)
+
+
+class PatternSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    title: str
+    description: str
+    rationale: str
+    version: str = "1.0.0"
+    tier: int = Field(ge=1, le=3)
+    category: str
+    subcategory: str | None = None
+    severity: Literal["error", "warning", "info"]
+    tags: list[str] = Field(default_factory=list)
+    reporting: RuleReporting
+    references: list[str] = Field(default_factory=list)
+    status: Literal["draft", "active", "deprecated"] = "draft"
+    variants: list[LanguageVariant] = Field(default_factory=list)
+
+
+class PatternSpecFile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: int = 2
+    pattern: PatternSpec
+
+
 @dataclass(frozen=True)
 class Finding:
-    """Represents a guideline violation (enforcement mode)."""
+    """Represents a pattern violation (enforcement mode)."""
 
-    guideline_id: str
+    pattern_id: str
     title: str
     category: str
     severity: str

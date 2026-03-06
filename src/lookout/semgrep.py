@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import textwrap
 from pathlib import Path
 from typing import Any
@@ -13,12 +14,14 @@ from lookout.models import (
     MustWrapCheck,
     PatternDiscoveryCheck,
     PatternInstance,
+    PatternSpecFile,
     RawCheck,
     RequiredWithCheck,
     RuleCheck,
     RuleError,
     RuleSpecFile,
 )
+from lookout.specs import SpecUnion, is_discovery_spec
 
 
 def _str_presenter(dumper: yaml.BaseDumper, data: str) -> yaml.ScalarNode:
@@ -31,27 +34,82 @@ yaml.add_representer(str, _str_presenter)  # type: ignore[arg-type]
 yaml.add_representer(str, _str_presenter, Dumper=yaml.SafeDumper)  # type: ignore[arg-type]
 
 
-def compile_semgrep_config(specs: list[RuleSpecFile]) -> dict[str, Any]:
+def compile_semgrep_config(specs: list[SpecUnion]) -> dict[str, Any]:
     rules: list[dict[str, Any]] = []
     for spec in specs:
-        rule = spec.rule
-        check = rule.check
-        if isinstance(check, RawCheck):
-            raw_config = yaml.safe_load(check.config)
-            rules.extend(raw_config.get("rules", []))
-            continue
-
-        compiled: dict[str, Any] = {
-            "id": f"{rule.id.lower()}-impl",
-            "languages": rule.languages,
-            "severity": rule.severity.upper(),
-            "message": rule.reporting.default_message,
-        }
-
-        compiled["patterns"] = _compile_patterns(check)
-        rules.append(compiled)
-
+        if isinstance(spec, PatternSpecFile):
+            rules.extend(_flatten_pattern_spec(spec))
+        else:
+            _compile_v1_spec(spec, rules)
     return {"rules": rules}
+
+
+def _expand_raw_check(check: RawCheck) -> list[dict[str, Any]]:
+    """Parse a RawCheck config and return its rules list."""
+    raw_config = yaml.safe_load(check.config)
+    result: list[dict[str, Any]] = raw_config.get("rules", [])
+    return result
+
+
+def _compile_v1_spec(spec: RuleSpecFile, rules: list[dict[str, Any]]) -> None:
+    rule = spec.rule
+    check = rule.check
+    if isinstance(check, RawCheck):
+        rules.extend(_expand_raw_check(check))
+        return
+
+    compiled: dict[str, Any] = {
+        "id": f"{rule.id.lower()}-impl",
+        "languages": rule.languages,
+        "severity": rule.severity.upper(),
+        "message": rule.reporting.default_message,
+    }
+
+    compiled["patterns"] = _compile_patterns(check)
+    rules.append(compiled)
+
+
+def _compile_variant(
+    rule_id: str, language: str, severity: str, message: str, check: RuleCheck
+) -> dict[str, Any]:
+    """Compile a single variant check into a Semgrep rule dict."""
+    return {
+        "id": rule_id,
+        "languages": [language],
+        "severity": severity.upper(),
+        "message": message,
+        "patterns": _compile_patterns(check),
+    }
+
+
+def _flatten_pattern_spec(spec: PatternSpecFile) -> list[dict[str, Any]]:
+    """Expand a hierarchical PatternSpecFile into flat Semgrep rules."""
+    rules: list[dict[str, Any]] = []
+    pattern = spec.pattern
+    pattern_id = pattern.id.lower()
+    severity = pattern.severity
+    message = pattern.reporting.default_message
+
+    for variant in pattern.variants:
+        language = variant.language
+
+        if variant.generic is not None:
+            check = variant.generic.check
+            if isinstance(check, RawCheck):
+                rules.extend(_expand_raw_check(check))
+            else:
+                rule_id = f"{pattern_id}-{language}-impl"
+                rules.append(_compile_variant(rule_id, language, severity, message, check))
+
+        for fw in variant.frameworks:
+            check = fw.check
+            if isinstance(check, RawCheck):
+                rules.extend(_expand_raw_check(check))
+            else:
+                rule_id = f"{pattern_id}-{language}-{fw.name}-impl"
+                rules.append(_compile_variant(rule_id, language, severity, message, check))
+
+    return rules
 
 
 def _compile_patterns(check: RuleCheck) -> list[dict[str, Any]]:
@@ -171,14 +229,35 @@ def render_dry_run(config: dict[str, Any], config_path: Path, targets: list[Path
     )
 
 
+def build_spec_index(specs: list[SpecUnion]) -> dict[str, SpecUnion]:
+    """Build an index from pattern/rule ID to spec for result parsing."""
+    return {get_spec_id(spec): spec for spec in specs}
+
+
+def _get_spec_metadata(spec: SpecUnion) -> tuple[str, str, str, int, str]:
+    """Extract (title, category, severity, tier, confidence) from a spec."""
+    if isinstance(spec, PatternSpecFile):
+        p = spec.pattern
+        return p.title, p.category, p.severity, p.tier, p.reporting.confidence
+    r = spec.rule
+    return r.title, r.category, r.severity, r.tier, r.reporting.confidence
+
+
+def get_spec_id(spec: SpecUnion) -> str:
+    """Extract the ID from either a RuleSpecFile or PatternSpecFile."""
+    if isinstance(spec, PatternSpecFile):
+        return spec.pattern.id
+    return spec.rule.id
+
+
 def parse_semgrep_output(
-    output: str, spec_index: dict[str, RuleSpecFile]
+    output: str, spec_index: dict[str, SpecUnion]
 ) -> tuple[list[Finding], list[PatternInstance], list[RuleError]]:
     """Parse Semgrep output into findings (violations), pattern instances, and errors.
 
     Args:
         output: JSON output from Semgrep
-        spec_index: Map of guideline IDs to rule specs
+        spec_index: Map of pattern IDs to specs
 
     Returns:
         Tuple of (findings, pattern_instances, errors)
@@ -191,9 +270,7 @@ def parse_semgrep_output(
     errors: list[RuleError] = []
 
     for error in errors_data:
-        # We generally care about rule parse errors or execution errors
-        # that are tied to specific rules.
-        rule_id = _extract_guideline_id(error.get("rule_id", ""))
+        rule_id = _extract_pattern_id(error.get("rule_id", ""))
         errors.append(
             RuleError(
                 rule_id=rule_id,
@@ -205,68 +282,77 @@ def parse_semgrep_output(
 
     for result in results:
         check_id = result.get("check_id", "")
-        guideline_id = _extract_guideline_id(check_id)
-        spec = spec_index.get(guideline_id)
+        pattern_id = _extract_pattern_id(check_id)
+        spec = spec_index.get(pattern_id)
         if not spec:
             continue
 
         extra = result.get("extra", {})
+        title, category, severity, tier, confidence = _get_spec_metadata(spec)
 
-        # Check if this is pattern discovery or enforcement
-        if spec.rule.check.type == "pattern_discovery":
-            # This is a pattern instance, not a violation
+        if is_discovery_spec(spec):
             pattern_instances.append(
                 PatternInstance(
-                    pattern_id=guideline_id,
-                    title=spec.rule.title,
-                    category=spec.rule.category,
+                    pattern_id=pattern_id,
+                    title=title,
+                    category=category,
                     file=result.get("path", ""),
                     line=result.get("start", {}).get("line", 0),
                     snippet=_normalize_snippet(extra.get("lines", "")),
-                    confidence=spec.rule.reporting.confidence,
+                    confidence=confidence,
                 )
             )
         else:
-            # This is a violation finding
             findings.append(
                 Finding(
-                    guideline_id=guideline_id,
-                    title=spec.rule.title,
-                    category=spec.rule.category,
-                    severity=spec.rule.severity,
+                    pattern_id=pattern_id,
+                    title=title,
+                    category=category,
+                    severity=severity,
                     file=result.get("path", ""),
                     line=result.get("start", {}).get("line", 0),
                     message=extra.get("message", ""),
                     snippet=_normalize_snippet(extra.get("lines", "")),
                     engine="semgrep",
-                    tier=spec.rule.tier,
+                    tier=tier,
                 )
             )
 
     return findings, pattern_instances, errors
 
 
-def _extract_guideline_id(check_id: str) -> str:
-    """Extract guideline ID from Semgrep's namespaced check ID.
+# Pattern ID regex: matches identifiers like "arch-001", "py-sec-001", "di-001"
+_PATTERN_ID_RE = re.compile(r"^([a-z]+(?:-[a-z]+)*-\d{3})", re.IGNORECASE)
 
-    Semgrep namespaces rule IDs based on config file path.
-    This function extracts just the base rule ID.
+
+def _extract_pattern_id(check_id: str) -> str:
+    """Extract pattern ID from Semgrep's namespaced check ID.
+
+    Handles both v1 IDs (arch-001-impl) and v2 compound IDs
+    (di-001-python-django-impl).
 
     Examples:
         "tmp.test-abc.arch-003-impl" -> "ARCH-003"
         "arch-003-impl" -> "ARCH-003"
-        "path.to.config.arch-001-impl" -> "ARCH-001"
+        "di-001-python-impl" -> "DI-001"
+        "di-001-python-django-impl" -> "DI-001"
+        "py-sec-001-impl" -> "PY-SEC-001"
     """
     if not check_id:
         return ""
+
+    # Remove Semgrep namespace (everything before last dot)
+    if "." in check_id:
+        check_id = check_id.split(".")[-1]
 
     # Remove -impl suffix if present
     if check_id.endswith("-impl"):
         check_id = check_id[:-5]
 
-    # Remove Semgrep namespace (everything before last dot)
-    if "." in check_id:
-        check_id = check_id.split(".")[-1]
+    # Try to extract a pattern ID prefix (e.g., "arch-001" from "arch-001-python-django")
+    match = _PATTERN_ID_RE.match(check_id)
+    if match:
+        return match.group(1).upper()
 
     return check_id.upper()
 
