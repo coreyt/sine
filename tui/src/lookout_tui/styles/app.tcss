@@ -157,11 +157,39 @@ Screen {
 /* Config editor */
 #config-form {
     padding: 1 2;
-    max-width: 80;
+    overflow-y: auto;
 }
 
 #config-form Input {
     margin: 0 0 1 0;
+}
+
+#config-params {
+    height: auto;
+    max-height: 6;
+}
+
+#config-params Vertical {
+    width: 1fr;
+    padding: 0 1 0 0;
+}
+
+#lang-header, #fw-header {
+    height: 1;
+    background: $primary-darken-1;
+    color: $text;
+    margin-top: 1;
+    padding: 0 1;
+}
+
+#lang-table {
+    height: auto;
+    max-height: 12;
+}
+
+#fw-table {
+    height: auto;
+    max-height: 14;
 }
 
 /* Batch grid layout */

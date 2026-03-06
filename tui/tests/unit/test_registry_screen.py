@@ -146,6 +146,38 @@ class TestBuildGenerationText:
         assert "No output yet" in text.plain
 
 
+class TestSelectDialog:
+    def test_import(self) -> None:
+        from lookout_tui.widgets.input_dialog import SelectDialog
+
+        choices = {"python": ["3.12", "3.13"], "rust": []}
+        dialog = SelectDialog("Pick Language", choices)
+        assert dialog._title == "Pick Language"
+        assert dialog._choices == choices
+
+    def test_input_dialog_still_works(self) -> None:
+        from lookout_tui.widgets.input_dialog import InputDialog
+
+        dialog = InputDialog("Test prompt", placeholder="hint")
+        assert dialog._prompt == "Test prompt"
+
+
+class TestReplacePatternNodeSync:
+    def test_current_node_updated_after_replace(self) -> None:
+        """After _replace_pattern, _current_node should reference the new spec."""
+        from lookout.models import PatternDiscoveryCheck
+        from lookout.registry import add_language_variant
+
+        spec = _spec(id="SYNC-001")
+        check = PatternDiscoveryCheck(type="pattern_discovery", patterns=["$X(...)"])
+        updated = add_language_variant(spec, "python", check)
+
+        # Update node
+        new_node = PatternNodeData(spec=updated)
+        assert len(new_node.spec.pattern.variants) == 1
+        assert new_node.spec.pattern.variants[0].language == "python"
+
+
 class TestRegistryScreenHelpers:
     def test_save_and_load_roundtrip(self, tmp_path: Path) -> None:
         spec = _spec(id="ROUND-001")

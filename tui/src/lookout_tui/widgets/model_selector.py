@@ -58,18 +58,26 @@ class ModelSelector(Widget):
 
     def compose(self) -> ComposeResult:
         with Horizontal():
-            yield Select(
-                options=[(p, p) for p in sorted(self._available.keys())],
-                value=self._current_provider,
+            providers = sorted(self._available.keys())
+            yield Select[str](
+                options=[(p, p) for p in providers],
+                value=self._current_provider if self._current_provider in providers else Select.BLANK,
+                allow_blank=not providers,
                 id="provider-select",
                 prompt="Provider",
             )
             models = self._get_models_for_provider(self._current_provider)
-            yield Select(
+            if self._current_model_name in models:
+                model_value = self._current_model_name
+            elif models:
+                model_value = models[0]
+                self._current_model_name = model_value
+            else:
+                model_value = Select.BLANK
+            yield Select[str](
                 options=[(m, m) for m in models],
-                value=(
-                    self._current_model_name if self._current_model_name in models else Select.BLANK
-                ),
+                value=model_value,
+                allow_blank=not models,
                 id="model-select",
                 prompt="Model",
             )

@@ -35,6 +35,7 @@ from lookout_tui.pipeline.models import (
 )
 from lookout_tui.prompts.loader import PromptTemplate
 from lookout_tui.widgets.context_panel import ContextPanel
+from lookout_tui.widgets.input_dialog import SelectDialog
 from lookout_tui.widgets.model_selector import ModelSelector
 from lookout_tui.widgets.registry_tree import (
     FrameworkNodeData,
@@ -235,20 +236,45 @@ class RegistryScreen(Screen[None]):
         if not isinstance(node, PatternNodeData):
             self.notify("Select a pattern node first", severity="warning")
             return
-        # For now, add a stub language. A real implementation would prompt.
         spec = node.spec
-        lang = "python"  # placeholder — in real UI, prompt user
-        existing = {v.language for v in spec.pattern.variants}
-        if lang in existing:
-            self.notify(f"Language '{lang}' already exists", severity="warning")
-            return
-        from lookout.models import PatternDiscoveryCheck
+        config = self._get_config()
 
-        check = PatternDiscoveryCheck(type="pattern_discovery", patterns=["$X(...)"])
-        updated = add_language_variant(spec, lang, check)
-        self._replace_pattern(spec, updated)
-        self._refresh_tree()
-        self.notify(f"Added {lang} to {spec.pattern.id}")
+        # Build dependent choice list: language name → versions
+        existing = {v.language for v in spec.pattern.variants}
+        choices: dict[str, list[str]] = {}
+        for lang_name in config.get_language_names():
+            if lang_name not in existing:
+                choices[lang_name] = config.get_language_versions(lang_name)
+
+        if not choices:
+            self.notify("All configured languages already added", severity="warning")
+            return
+
+        def _on_result(result: tuple[str, str | None] | None) -> None:
+            if result is None:
+                return
+            lang_name, version = result
+            from lookout.models import PatternDiscoveryCheck
+
+            check = PatternDiscoveryCheck(type="pattern_discovery", patterns=["$X(...)"])
+            version_constraint = f">={version}" if version else None
+            updated = add_language_variant(
+                spec, lang_name, check, version_constraint=version_constraint
+            )
+            self._replace_pattern(spec, updated)
+            self._refresh_tree()
+            label = f"{lang_name} {version}" if version else lang_name
+            self.notify(f"Added {label} to {spec.pattern.id}")
+
+        self.app.push_screen(
+            SelectDialog(
+                "Add Language Variant",
+                choices,
+                name_prompt="Language",
+                version_prompt="Version",
+            ),
+            _on_result,
+        )
 
     def action_add_framework(self) -> None:
         node = self._current_node
@@ -257,21 +283,51 @@ class RegistryScreen(Screen[None]):
             return
         spec = node.spec
         lang = node.language
-        fw = "django"  # placeholder — in real UI, prompt user
-        existing = set()
+        config = self._get_config()
+
+        # Build dependent choice list: framework name → versions (for this language)
+        existing: set[str] = set()
         for v in spec.pattern.variants:
             if v.language == lang:
                 existing = {f.name for f in v.frameworks}
-        if fw in existing:
-            self.notify(f"Framework '{fw}' already exists", severity="warning")
-            return
-        from lookout.models import PatternDiscoveryCheck
 
-        check = PatternDiscoveryCheck(type="pattern_discovery", patterns=["$X(...)"])
-        updated = add_framework_variant(spec, lang, fw, check)
-        self._replace_pattern(spec, updated)
-        self._refresh_tree()
-        self.notify(f"Added {fw} to {spec.pattern.id}/{lang}")
+        choices: dict[str, list[str]] = {}
+        for fw_name in config.get_framework_names(lang):
+            if fw_name not in existing:
+                choices[fw_name] = config.get_framework_versions(fw_name, lang)
+
+        if not choices:
+            self.notify(
+                f"No more frameworks configured for {lang}. Add in Config.",
+                severity="warning",
+            )
+            return
+
+        def _on_result(result: tuple[str, str | None] | None) -> None:
+            if result is None:
+                return
+            fw_name, version = result
+            from lookout.models import PatternDiscoveryCheck
+
+            check = PatternDiscoveryCheck(type="pattern_discovery", patterns=["$X(...)"])
+            version_constraint = f">={version}" if version else None
+            updated = add_framework_variant(
+                spec, lang, fw_name, check, version_constraint=version_constraint
+            )
+            self._replace_pattern(spec, updated)
+            self._refresh_tree()
+            label = f"{fw_name} {version}" if version else fw_name
+            self.notify(f"Added {label} to {spec.pattern.id}/{lang}")
+
+        self.app.push_screen(
+            SelectDialog(
+                f"Add Framework for {lang}",
+                choices,
+                name_prompt="Framework",
+                version_prompt="Version",
+            ),
+            _on_result,
+        )
 
     def action_deprecate(self) -> None:
         node = self._current_node
@@ -430,12 +486,34 @@ class RegistryScreen(Screen[None]):
 
     # ── Helpers ───────────────────────────────────────────────────
 
+    def _get_config(self) -> TUIConfig:
+        from lookout_tui.app import LookoutApp
+
+        if isinstance(self.app, LookoutApp):
+            return self.app.tui_config
+        return TUIConfig()
+
     def _replace_pattern(
         self, old: PatternSpecFile, new: PatternSpecFile
     ) -> None:
-        """Replace a pattern in the in-memory list."""
+        """Replace a pattern in the in-memory list and update current node."""
         for i, p in enumerate(self._patterns):
             if p.pattern.id == old.pattern.id:
                 self._patterns[i] = new
-                return
-        self._patterns.append(new)
+                break
+        else:
+            self._patterns.append(new)
+
+        # Keep _current_node in sync with the updated spec
+        node = self._current_node
+        if node is not None and node.spec.pattern.id == old.pattern.id:
+            if isinstance(node, PatternNodeData):
+                self._current_node = PatternNodeData(spec=new)
+            elif isinstance(node, LanguageNodeData):
+                self._current_node = LanguageNodeData(
+                    spec=new, language=node.language
+                )
+            elif isinstance(node, FrameworkNodeData):
+                self._current_node = FrameworkNodeData(
+                    spec=new, language=node.language, framework=node.framework
+                )

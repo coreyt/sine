@@ -6,6 +6,13 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from lookout_tui.catalog import (
+    DEFAULT_FRAMEWORKS,
+    DEFAULT_LANGUAGES,
+    FrameworkEntry,
+    LanguageEntry,
+)
+
 
 class TUIConfig(BaseModel):
     """Configuration for the Lookout TUI."""
@@ -42,3 +49,77 @@ class TUIConfig(BaseModel):
         default=Path(".lookout-patterns"),
         description="User patterns directory",
     )
+
+    # Language and framework catalog (session-editable)
+    languages: list[LanguageEntry] = Field(default_factory=lambda: list(DEFAULT_LANGUAGES))
+    frameworks: list[FrameworkEntry] = Field(default_factory=lambda: list(DEFAULT_FRAMEWORKS))
+
+    model_config = {"arbitrary_types_allowed": True}
+
+    # ── Language helpers ──────────────────────────────────────────
+
+    def get_language_names(self) -> list[str]:
+        """Get sorted unique language base names."""
+        return sorted({lang.name for lang in self.languages})
+
+    def get_language_versions(self, name: str) -> list[str]:
+        """Get sorted versions for a language name."""
+        versions = [lang.version for lang in self.languages if lang.name == name and lang.version]
+        return sorted(versions)
+
+    def get_language_entries(self, name: str) -> list[LanguageEntry]:
+        """Get all entries for a language name."""
+        return [lang for lang in self.languages if lang.name == name]
+
+    def add_language(self, name: str, version: str | None = None) -> bool:
+        """Add a language entry. Returns False if already exists."""
+        entry = LanguageEntry(name=name.lower(), version=version)
+        if entry in self.languages:
+            return False
+        self.languages.append(entry)
+        return True
+
+    def remove_language(self, name: str, version: str | None = None) -> bool:
+        """Remove a language entry. Returns False if not found."""
+        entry = LanguageEntry(name=name.lower(), version=version)
+        try:
+            self.languages.remove(entry)
+            return True
+        except ValueError:
+            return False
+
+    # ── Framework helpers ─────────────────────────────────────────
+
+    def get_framework_names(self, language: str) -> list[str]:
+        """Get sorted unique framework names for a language."""
+        return sorted({fw.name for fw in self.frameworks if fw.language == language})
+
+    def get_framework_versions(self, name: str, language: str) -> list[str]:
+        """Get sorted versions for a framework under a language."""
+        versions = [
+            fw.version
+            for fw in self.frameworks
+            if fw.name == name and fw.language == language and fw.version
+        ]
+        return sorted(versions)
+
+    def add_framework(
+        self, name: str, language: str, version: str | None = None
+    ) -> bool:
+        """Add a framework entry. Returns False if already exists."""
+        entry = FrameworkEntry(name=name.lower(), language=language.lower(), version=version)
+        if entry in self.frameworks:
+            return False
+        self.frameworks.append(entry)
+        return True
+
+    def remove_framework(
+        self, name: str, language: str, version: str | None = None
+    ) -> bool:
+        """Remove a framework entry. Returns False if not found."""
+        entry = FrameworkEntry(name=name.lower(), language=language.lower(), version=version)
+        try:
+            self.frameworks.remove(entry)
+            return True
+        except ValueError:
+            return False
