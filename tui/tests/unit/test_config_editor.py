@@ -46,7 +46,7 @@ class TestConfigEditorScreen:
 
     def test_default_config_values(self) -> None:
         config = TUIConfig()
-        assert config.llm_model == "gemini/gemini-3.1-pro-tools"
+        assert config.llm_model == "gemini/gemini-3.1-pro"
         assert config.llm_temperature == 0.3
         assert config.llm_max_tokens == 4096
         assert config.llm_timeout == 120.0

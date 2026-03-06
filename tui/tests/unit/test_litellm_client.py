@@ -27,7 +27,7 @@ def _mock_response(content: str = "OK", model: str = "test-model") -> MagicMock:
 class TestLiteLLMClientPayload:
     async def test_chat_sends_correct_payload(self) -> None:
         client = LiteLLMClient(
-            model="gemini/gemini-3.1-pro-tools",
+            model="gemini/gemini-3.1-pro",
             temperature=0.5,
             max_tokens=1024,
             timeout=30.0,
@@ -39,7 +39,7 @@ class TestLiteLLMClientPayload:
             await client.chat("You are helpful.", "Hi there")
 
         kw = mock_litellm.acompletion.call_args.kwargs
-        assert kw["model"] == "gemini/gemini-3.1-pro-tools"
+        assert kw["model"] == "gemini/gemini-3.1-pro"
         assert kw["temperature"] == 0.5
         assert kw["max_tokens"] == 1024
         assert kw["timeout"] == 30.0
@@ -50,9 +50,9 @@ class TestLiteLLMClientPayload:
         assert msgs[1] == {"role": "user", "content": "Hi there"}
 
     async def test_chat_returns_llm_response(self) -> None:
-        client = LiteLLMClient(model="gemini/gemini-3.1-pro-tools")
+        client = LiteLLMClient(model="gemini/gemini-3.1-pro")
 
-        resp = _mock_response("Generated text", "gemini-3.1-pro-tools")
+        resp = _mock_response("Generated text", "gemini-3.1-pro")
         resp.usage = MagicMock(prompt_tokens=100, completion_tokens=50, total_tokens=150)
 
         with patch(f"{_MOD}.litellm") as mock_litellm:
@@ -61,7 +61,7 @@ class TestLiteLLMClientPayload:
 
         assert isinstance(result, LLMResponse)
         assert result.content == "Generated text"
-        assert result.model == "gemini-3.1-pro-tools"
+        assert result.model == "gemini-3.1-pro"
         assert result.usage["prompt_tokens"] == 100
         assert result.usage["completion_tokens"] == 50
         assert result.usage["total_tokens"] == 150
@@ -212,7 +212,7 @@ class TestValidateModelEnv:
                 "keys_in_environment": True,
                 "missing_keys": [],
             }
-            result = validate_model_env("gemini/gemini-3.1-pro-tools")
+            result = validate_model_env("gemini/gemini-3.1-pro")
 
-        mock_litellm.validate_environment.assert_called_once_with("gemini/gemini-3.1-pro-tools")
+        mock_litellm.validate_environment.assert_called_once_with("gemini/gemini-3.1-pro")
         assert result["keys_in_environment"] is True

@@ -26,7 +26,7 @@ class ModelSelector(Widget):
 
     def __init__(
         self,
-        current_model: str = "gemini/gemini-3.1-pro-tools",
+        current_model: str = "gemini/gemini-3.1-pro",
         id: str | None = None,
     ) -> None:
         super().__init__(id=id)

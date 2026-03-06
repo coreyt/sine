@@ -23,13 +23,13 @@ class LiteLLMClient:
     """Async LLM client using litellm for multi-provider support.
 
     Usage:
-        async with LiteLLMClient(model="gemini/gemini-3.1-pro-tools") as client:
+        async with LiteLLMClient(model="gemini/gemini-3.1-pro") as client:
             response = await client.chat("You are helpful.", "Hello!")
     """
 
     def __init__(
         self,
-        model: str = "gemini/gemini-3.1-pro-tools",
+        model: str = "gemini/gemini-3.1-pro",
         temperature: float = 0.3,
         max_tokens: int = 4096,
         timeout: float = 120.0,

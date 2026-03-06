@@ -18,7 +18,7 @@ class TUIConfig(BaseModel):
     """Configuration for the Lookout TUI."""
 
     llm_model: str = Field(
-        default="gemini/gemini-3.1-pro-tools",
+        default="gemini/gemini-3.1-pro",
         description="LLM model string (provider/model format for litellm)",
     )
     llm_temperature: float = Field(
