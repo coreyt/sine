@@ -124,7 +124,6 @@ class BatchJob:
                 }
                 for r in self.results
             ],
-            "request_count": len(self.requests),
             "created_at": self.created_at.isoformat(),
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "request_counts": self.request_counts,

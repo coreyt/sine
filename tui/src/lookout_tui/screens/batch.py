@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lookout.batch.models import CellStatus
+from lookout.batch.models import CellStatus, RegistryCell
 from lookout.batch.orchestrator import BatchOrchestrator
 from lookout.config import LookoutConfig
 from textual import work
@@ -146,7 +146,7 @@ class BatchGridScreen(Screen[None]):
         self._do_submit(selected)
 
     @work(thread=False)
-    async def _do_submit(self, cells: list) -> None:
+    async def _do_submit(self, cells: list[RegistryCell]) -> None:
         orch = self._get_orchestrator()
         try:
             job = await orch.submit_batch(cells)

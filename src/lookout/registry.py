@@ -226,15 +226,11 @@ def _replace_variants(
     spec: PatternSpecFile, new_variants: list[LanguageVariant]
 ) -> PatternSpecFile:
     """Return a new PatternSpecFile with replaced variants list."""
-    data = spec.model_dump(mode="json")
-    data["pattern"]["variants"] = [
-        v.model_dump(mode="json") for v in new_variants
-    ]
-    return PatternSpecFile.model_validate(data)
+    new_pattern = spec.pattern.model_copy(update={"variants": new_variants})
+    return spec.model_copy(update={"pattern": new_pattern})
 
 
 def _replace_status(spec: PatternSpecFile, status: str) -> PatternSpecFile:
     """Return a new PatternSpecFile with replaced status."""
-    data = spec.model_dump(mode="json")
-    data["pattern"]["status"] = status
-    return PatternSpecFile.model_validate(data)
+    new_pattern = spec.pattern.model_copy(update={"status": status})
+    return spec.model_copy(update={"pattern": new_pattern})

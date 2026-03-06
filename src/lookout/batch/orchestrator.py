@@ -82,7 +82,7 @@ class BatchOrchestrator:
             spec = spec_map.get(cell.pattern_id)
             if spec is None:
                 continue
-            cache_key = f"{cell.pattern_id}__{cell.framework or 'generic'}"
+            cache_key = f"{cell.pattern_id}__{cell.language}__{cell.framework or 'generic'}"
             if cache_key not in summary_cache:
                 summary_cache[cache_key] = build_batch_prompts(cell, spec, self._loader)
             system, user = summary_cache[cache_key]

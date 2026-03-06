@@ -28,7 +28,6 @@ def parse_language_generic_output(output: str) -> tuple[RuleCheck, VariantExampl
 
 def parse_framework_output(
     output: str,
-    language: str,
 ) -> tuple[RuleCheck, VariantExamples] | None:
     """Parse framework output. Returns None if output contains SKIP."""
     if re.search(r"^\s*SKIP:", output, re.MULTILINE):

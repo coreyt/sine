@@ -13,6 +13,7 @@ from textual.widgets import DataTable, Footer, Header, Static
 
 from lookout_tui.clients.litellm_client import LiteLLMClient
 from lookout_tui.clients.protocol import LLMClient
+from lookout_tui.config import TUIConfig
 from lookout_tui.keys import ci
 from lookout_tui.pipeline.generator import GenerationPipeline
 from lookout_tui.pipeline.models import (
@@ -56,8 +57,7 @@ class GenerationPipelineScreen(Screen[None]):
         yield Static(" Generation Pipeline", id="screen-title")
         from lookout_tui.app import LookoutApp
 
-        default_model = "gemini/gemini-3.1-pro-tools"
-        model = self.app.tui_config.llm_model if isinstance(self.app, LookoutApp) else default_model
+        model = self.app.tui_config.llm_model if isinstance(self.app, LookoutApp) else TUIConfig().llm_model
         yield ModelSelector(current_model=model, id="model-selector")
         with Horizontal(id="generation-main"):
             with Vertical(id="queue-panel"):

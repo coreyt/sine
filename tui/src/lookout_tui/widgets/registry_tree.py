@@ -93,24 +93,15 @@ class RegistryTree(Tree[NodeData]):
                     )
 
                     # Generic variant leaf
-                    if variant.generic:
-                        lang_node.add_leaf(
-                            "generic ✓",
-                            data=FrameworkNodeData(
-                                spec=spec,
-                                language=variant.language,
-                                framework="generic",
-                            ),
-                        )
-                    else:
-                        lang_node.add_leaf(
-                            "generic ✗",
-                            data=FrameworkNodeData(
-                                spec=spec,
-                                language=variant.language,
-                                framework="generic",
-                            ),
-                        )
+                    generic_icon = "✓" if variant.generic else "✗"
+                    lang_node.add_leaf(
+                        f"generic {generic_icon}",
+                        data=FrameworkNodeData(
+                            spec=spec,
+                            language=variant.language,
+                            framework="generic",
+                        ),
+                    )
 
                     # Framework variant leaves
                     for fw in variant.frameworks:

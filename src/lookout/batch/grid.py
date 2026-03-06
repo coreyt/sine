@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime
 
 from pydantic import BaseModel
 
-from lookout.batch.models import CellStatus, RegistryCell
+from lookout.batch.models import CellStatus, RegistryCell, _parse_iso
 from lookout.models import (
     FrameworkVariant,
     GenerationMeta,
@@ -140,11 +139,6 @@ def _check_variant_staleness(
     if meta.input_hash == current_hash:
         return CellStatus.PRESENT
     return CellStatus.POSSIBLY_STALE
-
-
-def _parse_iso(s: str) -> datetime:
-    """Parse ISO timestamp, handling Z suffix for Python 3.10 compat."""
-    return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
 def _check_to_string(check: BaseModel) -> str:

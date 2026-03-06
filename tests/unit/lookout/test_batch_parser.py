@@ -161,7 +161,7 @@ class TestParseFrameworkOutput:
 SKIP: The generic python variant adequately covers django usage.
 Reason: Django's DI patterns are handled by the generic constructor injection rule.
 """
-        result = parse_framework_output(output, "python")
+        result = parse_framework_output(output)
         assert result is None
 
     def test_framework_variant(self) -> None:
@@ -192,7 +192,7 @@ class MyView(View):
         service = Service()
 ```
 """
-        result = parse_framework_output(output, "python")
+        result = parse_framework_output(output)
         assert result is not None
         check, examples = result
         assert check.type == "forbidden"

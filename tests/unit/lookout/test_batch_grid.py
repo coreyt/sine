@@ -164,7 +164,7 @@ class TestBuildRegistryGrid:
         assert len(cells) == 1
         assert cells[0].status == CellStatus.POSSIBLY_STALE
 
-    def test_missing_cell_no_generation_meta(self) -> None:
+    def test_present_cell_no_generation_meta(self) -> None:
         """A variant with a check but no generation_meta is treated as PRESENT."""
         check = _make_check()
         spec = _make_spec(

@@ -24,6 +24,7 @@ from textual.widgets import Footer, Header, Input, Static
 
 from lookout_tui.clients.litellm_client import LiteLLMClient
 from lookout_tui.clients.protocol import LLMClient
+from lookout_tui.config import TUIConfig
 from lookout_tui.keys import ci
 from lookout_tui.pipeline.generator import GenerationPipeline
 from lookout_tui.pipeline.models import (
@@ -85,11 +86,10 @@ class RegistryScreen(Screen[None]):
         yield Static(" Lookout — Pattern Registry", id="screen-title")
         from lookout_tui.app import LookoutApp
 
-        default_model = "gemini/gemini-3.1-pro-tools"
         model = (
             self.app.tui_config.llm_model
             if isinstance(self.app, LookoutApp)
-            else default_model
+            else TUIConfig().llm_model
         )
         yield ModelSelector(current_model=model, id="model-selector")
         yield Input(placeholder="Filter patterns...", id="filter-input")
