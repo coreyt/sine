@@ -1,4 +1,4 @@
-"""Batch generation screen — grid of pattern x language x framework cells."""
+"""Batch screen — bulk generation grid, cell selection, batch submission."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ _STATUS_SYMBOLS = {
 }
 
 
-class BatchGridScreen(Screen[None]):
+class BatchScreen(Screen[None]):
     """Browse and submit batch check generation requests."""
 
     DEFAULT_LANGUAGES = ["python", "typescript", "java", "go", "kotlin"]
@@ -43,8 +43,6 @@ class BatchGridScreen(Screen[None]):
         Binding("enter", "submit_batch", "Submit", priority=True),
         *ci("r", "refresh_grid", "Refresh"),
         Binding("f5", "refresh_grid", "Refresh", show=False),
-        Binding("escape", "app.go_home", "Home"),
-        Binding("f3", "app.go_home", "Home", show=False),
     ]
 
     def __init__(self) -> None:
@@ -55,7 +53,7 @@ class BatchGridScreen(Screen[None]):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static(" Lookout -- Batch Generation", id="screen-title")
+        yield Static(" Lookout — Batch Generation", id="screen-title")
         with Vertical(id="batch-main"):
             yield DataTable(id="batch-table")
             yield Static("", id="batch-status")
@@ -91,10 +89,11 @@ class BatchGridScreen(Screen[None]):
 
     def _render_table(self) -> None:
         table = self.query_one("#batch-table", DataTable)
+        prev_row = table.cursor_row
         table.clear()
         for item in self._grid.get_display_data():
             status_label, _ = _STATUS_SYMBOLS.get(
-                CellStatus(item["status"]), ("?", "white")
+                item["status"], ("?", "white")
             )
             selected = "x" if item["selected"] else " "
             table.add_row(
@@ -105,6 +104,8 @@ class BatchGridScreen(Screen[None]):
                 f"[{selected}]",
                 key=item["cell_id"],
             )
+        if prev_row is not None and prev_row < table.row_count:
+            table.move_cursor(row=prev_row)
 
     def action_toggle_cell(self) -> None:
         table = self.query_one("#batch-table", DataTable)

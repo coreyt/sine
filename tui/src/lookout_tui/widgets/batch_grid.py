@@ -53,7 +53,7 @@ class BatchGrid:
                 "pattern_id": c.pattern_id,
                 "language": c.language,
                 "framework": c.framework or "generic",
-                "status": c.status.value,
+                "status": c.status,
                 "selected": c.cell_id in self._selected,
             }
             for c in self._cells

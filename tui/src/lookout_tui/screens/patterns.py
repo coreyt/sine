@@ -1,8 +1,9 @@
-"""Registry management screen — browse, create, and generate pattern specs."""
+"""Patterns screen — browse, create, edit, generate, review, save."""
 
 from __future__ import annotations
 
 import asyncio
+from typing import Literal
 
 from lookout.models import PatternSpecFile
 from lookout.registry import (
@@ -20,7 +21,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Footer, Header, Input, Static
+from textual.widgets import ContentSwitcher, Footer, Header, Input, Static
 
 from lookout_tui.clients.litellm_client import LiteLLMClient
 from lookout_tui.clients.protocol import LLMClient
@@ -35,6 +36,7 @@ from lookout_tui.pipeline.models import (
 )
 from lookout_tui.prompts.loader import PromptTemplate
 from lookout_tui.widgets.context_panel import ContextPanel
+from lookout_tui.widgets.diff_view import DiffView
 from lookout_tui.widgets.input_dialog import SelectDialog
 from lookout_tui.widgets.model_selector import ModelSelector
 from lookout_tui.widgets.registry_tree import (
@@ -44,35 +46,33 @@ from lookout_tui.widgets.registry_tree import (
     PatternNodeData,
     RegistryTree,
 )
+from lookout_tui.widgets.stage_progress import StageProgress
 
 
-class RegistryScreen(Screen[None]):
-    """Browse, create, and generate pattern registry entries."""
+class PatternsScreen(Screen[None]):
+    """Single hub for all pattern work — browse, create, edit, generate, review, save."""
 
     BINDINGS = [
-        # Tier 2 standard keys (§2.2)
-        *ci("a", "new_pattern", "Add"),
+        # Tier 2 standard keys
+        *ci("a", "add", "Add"),
+        *ci("g", "generate", "Generate"),
         *ci("d", "deprecate", "Deprecate"),
-        *ci("e", "edit_pattern", "Edit"),
-        *ci("y", "yank_id", "Yank"),
-        # Screen-specific keys
-        *ci("l", "add_language", "Add Lang"),
-        *ci("f", "add_framework", "Add FW"),
-        *ci("n", "generate", "Generate"),
         *ci("w", "write_pattern", "Write"),
+        *ci("y", "yank_id", "Yank"),
+        # Approve/reject
         Binding("ctrl+a", "approve_action", "Approve", key_display="^a"),
         Binding("ctrl+x", "reject", "Reject", key_display="^x"),
-        # Tier 1 keys (§2.2)
+        # Navigation
         Binding("slash", "focus_filter", "Filter", key_display="/"),
-        *ci("r", "refresh_registry", "Refresh"),
-        Binding("f5", "refresh_registry", "Refresh", show=False),
-        Binding("escape", "app.go_home", "Home"),
-        Binding("f3", "app.go_home", "Home", show=False),
+        *ci("r", "refresh", "Refresh"),
+        Binding("f5", "refresh", "Refresh", show=False),
+        Binding("escape", "escape_action", "Back"),
     ]
 
     def __init__(self) -> None:
         super().__init__()
         self._patterns: list[PatternSpecFile] = []
+        self._built_in_specs: list[PatternSpecFile] | None = None
         self._built_in_ids: set[str] = set()
         self._user_ids: set[str] = set()
         self._current_node: NodeData | None = None
@@ -81,10 +81,11 @@ class RegistryScreen(Screen[None]):
         self._client: LLMClient | None = None
         self._pipeline_lock = asyncio.Lock()
         self._new_pattern_counter = 0
+        self._mode: Literal["detail", "generate"] = "detail"
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static(" Lookout — Pattern Registry", id="screen-title")
+        yield Static(" Lookout — Patterns", id="screen-title")
         from lookout_tui.app import LookoutApp
 
         model = (
@@ -94,11 +95,15 @@ class RegistryScreen(Screen[None]):
         )
         yield ModelSelector(current_model=model, id="model-selector")
         yield Input(placeholder="Filter patterns...", id="filter-input")
-        with Horizontal(id="registry-main"):
-            with Vertical(id="registry-tree-panel"):
+        with Horizontal(id="patterns-main"):
+            with Vertical(id="patterns-tree-panel"):
                 yield RegistryTree(id="registry-tree")
-            with Vertical(id="registry-context-panel"):
-                yield ContextPanel(id="context-panel")
+            with ContentSwitcher(id="content-switcher", initial="detail"):
+                with Vertical(id="detail"):
+                    yield ContextPanel(id="context-panel")
+                with Vertical(id="generate"):
+                    yield StageProgress(id="stage-progress")
+                    yield DiffView(id="diff-view")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -110,18 +115,24 @@ class RegistryScreen(Screen[None]):
             self._client = None
             self._pipeline = None
 
+    # ── Mode switching ────────────────────────────────────────────
+
+    def _switch_mode(self, mode: Literal["detail", "generate"]) -> None:
+        self._mode = mode
+        self.query_one("#content-switcher", ContentSwitcher).current = mode
+
     # ── Data loading ──────────────────────────────────────────────
 
     def _load_and_refresh(self) -> None:
         from lookout_tui.app import LookoutApp
 
-        # Load built-in v2 patterns
-        built_in_specs = [
-            s for s in load_built_in_patterns() if isinstance(s, PatternSpecFile)
-        ]
+        if self._built_in_specs is None:
+            self._built_in_specs = [
+                s for s in load_built_in_patterns() if isinstance(s, PatternSpecFile)
+            ]
+        built_in_specs = self._built_in_specs
         built_in_ids = {s.pattern.id for s in built_in_specs}
 
-        # Load user v2 patterns (override built-in by ID)
         user_specs: list[PatternSpecFile] = []
         if isinstance(self.app, LookoutApp):
             rules_dir = self.app.tui_config.patterns_dir
@@ -131,16 +142,12 @@ class RegistryScreen(Screen[None]):
                 ]
 
         user_ids = {s.pattern.id for s in user_specs}
-        # Merge: user overrides built-in by ID
         merged = {s.pattern.id: s for s in built_in_specs}
         for s in user_specs:
             merged[s.pattern.id] = s
         self._patterns = list(merged.values())
-
-        # Track which IDs are built-in vs user-provided
         self._built_in_ids = built_in_ids - user_ids
         self._user_ids = user_ids
-
         self._refresh_tree()
 
     def _refresh_tree(self, filter_text: str = "") -> None:
@@ -156,7 +163,7 @@ class RegistryScreen(Screen[None]):
             ]
         tree.populate(patterns, built_in_ids=self._built_in_ids)
         title = self.query_one("#screen-title", Static)
-        title.update(f" Lookout — Pattern Registry ({len(patterns)} patterns)")
+        title.update(f" Lookout — Patterns ({len(patterns)} patterns)")
 
     # ── Event handlers ────────────────────────────────────────────
 
@@ -169,6 +176,7 @@ class RegistryScreen(Screen[None]):
     ) -> None:
         self._current_node = event.node_data
         self._generation_result = None
+        self._switch_mode("detail")
         panel = self.query_one("#context-panel", ContextPanel)
 
         if isinstance(event.node_data, PatternNodeData):
@@ -199,12 +207,14 @@ class RegistryScreen(Screen[None]):
     def action_focus_filter(self) -> None:
         self.query_one("#filter-input", Input).focus()
 
-    def action_refresh_registry(self) -> None:
+    def action_refresh(self) -> None:
         self._load_and_refresh()
-        self.notify("Registry refreshed")
+        self.notify("Patterns refreshed")
 
-    def action_edit_pattern(self) -> None:
-        self.notify("Edit not yet implemented", severity="warning")
+    def action_escape_action(self) -> None:
+        if self._mode == "generate":
+            self._switch_mode("detail")
+        # If already in detail mode, no-op (we're the main screen)
 
     def action_yank_id(self) -> None:
         node = self._current_node
@@ -215,9 +225,18 @@ class RegistryScreen(Screen[None]):
         self.app.copy_to_clipboard(pattern_id)
         self.notify(f"Copied {pattern_id}")
 
-    # ── Create / mutate actions ───────────────────────────────────
+    # ── Add action (context-sensitive) ────────────────────────────
 
-    def action_new_pattern(self) -> None:
+    def action_add(self) -> None:
+        node = self._current_node
+        if isinstance(node, LanguageNodeData):
+            self._add_framework()
+        elif isinstance(node, PatternNodeData):
+            self._add_language()
+        else:
+            self._new_pattern()
+
+    def _new_pattern(self) -> None:
         self._new_pattern_counter += 1
         spec = create_pattern(
             id=f"NEW-{self._new_pattern_counter:03d}",
@@ -231,7 +250,7 @@ class RegistryScreen(Screen[None]):
         self._refresh_tree()
         self.notify(f"Created draft pattern {spec.pattern.id}")
 
-    def action_add_language(self) -> None:
+    def _add_language(self) -> None:
         node = self._current_node
         if not isinstance(node, PatternNodeData):
             self.notify("Select a pattern node first", severity="warning")
@@ -239,7 +258,6 @@ class RegistryScreen(Screen[None]):
         spec = node.spec
         config = self._get_config()
 
-        # Build dependent choice list: language name → versions
         existing = {v.language for v in spec.pattern.variants}
         choices: dict[str, list[str]] = {}
         for lang_name in config.get_language_names():
@@ -276,7 +294,7 @@ class RegistryScreen(Screen[None]):
             _on_result,
         )
 
-    def action_add_framework(self) -> None:
+    def _add_framework(self) -> None:
         node = self._current_node
         if not isinstance(node, LanguageNodeData):
             self.notify("Select a language node first", severity="warning")
@@ -285,11 +303,8 @@ class RegistryScreen(Screen[None]):
         lang = node.language
         config = self._get_config()
 
-        # Build dependent choice list: framework name → versions (for this language)
-        existing: set[str] = set()
-        for v in spec.pattern.variants:
-            if v.language == lang:
-                existing = {f.name for f in v.frameworks}
+        variant = next((v for v in spec.pattern.variants if v.language == lang), None)
+        existing = {f.name for f in variant.frameworks} if variant else set()
 
         choices: dict[str, list[str]] = {}
         for fw_name in config.get_framework_names(lang):
@@ -298,7 +313,7 @@ class RegistryScreen(Screen[None]):
 
         if not choices:
             self.notify(
-                f"No more frameworks configured for {lang}. Add in Config.",
+                f"No more frameworks configured for {lang}. Add in Settings.",
                 severity="warning",
             )
             return
@@ -329,6 +344,8 @@ class RegistryScreen(Screen[None]):
             _on_result,
         )
 
+    # ── Deprecate / Approve / Reject ──────────────────────────────
+
     def action_deprecate(self) -> None:
         node = self._current_node
         if not isinstance(node, PatternNodeData):
@@ -344,7 +361,6 @@ class RegistryScreen(Screen[None]):
         self.notify(f"Deprecated {spec.pattern.id}")
 
     def action_approve_action(self) -> None:
-        # If generation result awaiting review, approve it
         result = self._generation_result
         if result and result.status == StageStatus.AWAITING_REVIEW:
             result.status = StageStatus.APPROVED
@@ -399,10 +415,11 @@ class RegistryScreen(Screen[None]):
             self.notify("Select a node first", severity="warning")
             return
 
+        self._switch_mode("generate")
+
         spec: PatternSpecFile
         if isinstance(node, PatternNodeData):
             spec = node.spec
-            # Generate top-level for all languages
             job = GenerationJob(
                 pattern_id=spec.pattern.id,
                 title=spec.pattern.title,
@@ -437,7 +454,10 @@ class RegistryScreen(Screen[None]):
     @work(thread=False)
     async def _run_generation(self, job: GenerationJob) -> None:
         pipeline = await self._ensure_pipeline()
-        panel = self.query_one("#context-panel", ContextPanel)
+        progress = self.query_one("#stage-progress", StageProgress)
+        diff = self.query_one("#diff-view", DiffView)
+
+        progress.show_job(job)
 
         for stage in job.stages:
             if stage.status != StageStatus.PENDING:
@@ -457,8 +477,8 @@ class RegistryScreen(Screen[None]):
                 )
 
             self._generation_result = stage
-            panel.show_generation(stage)
-            # Stop after first stage to let user review
+            progress.show_job(job)
+            diff.show_stage(stage)
             break
 
     async def _ensure_pipeline(self) -> GenerationPipeline:
@@ -496,7 +516,6 @@ class RegistryScreen(Screen[None]):
     def _replace_pattern(
         self, old: PatternSpecFile, new: PatternSpecFile
     ) -> None:
-        """Replace a pattern in the in-memory list and update current node."""
         for i, p in enumerate(self._patterns):
             if p.pattern.id == old.pattern.id:
                 self._patterns[i] = new
@@ -504,7 +523,6 @@ class RegistryScreen(Screen[None]):
         else:
             self._patterns.append(new)
 
-        # Keep _current_node in sync with the updated spec
         node = self._current_node
         if node is not None and node.spec.pattern.id == old.pattern.id:
             if isinstance(node, PatternNodeData):

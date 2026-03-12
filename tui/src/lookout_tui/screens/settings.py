@@ -1,4 +1,4 @@
-"""Config Editor screen — model selection, LLM settings, and catalog management."""
+"""Settings screen — LLM configuration and language/framework catalog."""
 
 from __future__ import annotations
 
@@ -13,16 +13,16 @@ from lookout_tui.keys import ci
 from lookout_tui.widgets.input_dialog import InputDialog
 from lookout_tui.widgets.model_selector import ModelSelector
 
+_VERSION_ANY = "(any)"
 
-class ConfigEditorScreen(Screen[None]):
+
+class SettingsScreen(Screen[None]):
     """Configuration editor for LLM settings, languages, and frameworks."""
 
     BINDINGS = [
         Binding("ctrl+s", "save", "Save", key_display="^s"),
         *ci("a", "add_entry", "Add"),
         *ci("d", "delete_entry", "Delete"),
-        Binding("escape", "app.go_home", "Home"),
-        Binding("f3", "app.go_home", "Home", show=False),
     ]
 
     def __init__(self) -> None:
@@ -34,12 +34,11 @@ class ConfigEditorScreen(Screen[None]):
         from lookout_tui.app import LookoutApp
 
         yield Header()
-        yield Static(" Configuration Editor", id="screen-title")
+        yield Static(" Lookout — Settings", id="screen-title")
 
         config = self.app.tui_config if isinstance(self.app, LookoutApp) else None
 
         with Vertical(id="config-form"):
-            # ── LLM settings ──
             yield Label("Model")
             model = config.llm_model if config else TUIConfig().llm_model
             yield ModelSelector(current_model=model, id="config-model-selector")
@@ -67,13 +66,11 @@ class ConfigEditorScreen(Screen[None]):
                         type="number",
                     )
 
-            # ── Language catalog ──
             yield Static(" Languages (a: add, d: delete)", id="lang-header")
             lang_table: DataTable[str] = DataTable(id="lang-table")
             lang_table.cursor_type = "row"
             yield lang_table
 
-            # ── Framework catalog ──
             yield Static(" Frameworks (a: add, d: delete)", id="fw-header")
             fw_table: DataTable[str] = DataTable(id="fw-table")
             fw_table.cursor_type = "row"
@@ -82,35 +79,32 @@ class ConfigEditorScreen(Screen[None]):
         yield Footer()
 
     def on_mount(self) -> None:
+        lang_table = self.query_one("#lang-table", DataTable)
+        lang_table.add_columns("Language", "Version")
+        fw_table = self.query_one("#fw-table", DataTable)
+        fw_table.add_columns("Framework", "Language", "Version")
         self._populate_tables()
 
     def _populate_tables(self) -> None:
         config = self._get_config()
 
-        # Language table
         lang_table = self.query_one("#lang-table", DataTable)
-        lang_table.clear(columns=True)
-        lang_table.add_columns("Language", "Version")
-        for lang in sorted(config.languages, key=lambda l: (l.name, l.version or "")):
-            lang_table.add_row(lang.name, lang.version or "(any)", key=lang.key)
+        lang_table.clear()
+        for lang in sorted(config.languages, key=lambda le: (le.name, le.version or "")):
+            lang_table.add_row(lang.name, lang.version or _VERSION_ANY, key=lang.key)
 
-        # Framework table
         fw_table = self.query_one("#fw-table", DataTable)
-        fw_table.clear(columns=True)
-        fw_table.add_columns("Framework", "Language", "Version")
+        fw_table.clear()
         for fw in sorted(config.frameworks, key=lambda f: (f.language, f.name, f.version or "")):
-            fw_table.add_row(fw.name, fw.language, fw.version or "(any)", key=fw.key)
+            fw_table.add_row(fw.name, fw.language, fw.version or _VERSION_ANY, key=fw.key)
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
-        """Track which table is active for add/delete context."""
         table_id = event.data_table.id
         if table_id in ("lang-table", "fw-table"):
             self._active_table = table_id
 
     def on_model_selector_model_changed(self, event: ModelSelector.ModelChanged) -> None:
         self._pending_model = event.model
-
-    # ── Add / Delete actions ──
 
     def action_add_entry(self) -> None:
         if self._active_table == "fw-table":
@@ -156,7 +150,7 @@ class ConfigEditorScreen(Screen[None]):
             return
         row = lang_table.get_row_at(row_key)
         name = str(row[0])
-        version = str(row[1]) if row[1] != "(any)" else None
+        version = str(row[1]) if row[1] != _VERSION_ANY else None
 
         config = self._get_config()
         if config.remove_language(name, version):
@@ -177,7 +171,6 @@ class ConfigEditorScreen(Screen[None]):
         def _on_result(result: str | None) -> None:
             if not result:
                 return
-            # Expected format: "language framework [version]"
             parts = result.strip().lower().split()
             if len(parts) < 2:
                 self.notify(
@@ -213,7 +206,7 @@ class ConfigEditorScreen(Screen[None]):
         row = fw_table.get_row_at(row_key)
         name = str(row[0])
         language = str(row[1])
-        version = str(row[2]) if row[2] != "(any)" else None
+        version = str(row[2]) if row[2] != _VERSION_ANY else None
 
         config = self._get_config()
         if config.remove_framework(name, language, version):
@@ -223,10 +216,7 @@ class ConfigEditorScreen(Screen[None]):
         else:
             self.notify("Framework not found", severity="warning")
 
-    # ── Save ──
-
     def action_save(self) -> None:
-        """Write settings back to app config (session-only)."""
         from lookout_tui.app import LookoutApp
 
         if not isinstance(self.app, LookoutApp):
@@ -256,8 +246,6 @@ class ConfigEditorScreen(Screen[None]):
             pass
 
         self.notify("Settings saved (session only)")
-
-    # ── Helpers ──
 
     def _get_config(self) -> TUIConfig:
         from lookout_tui.app import LookoutApp

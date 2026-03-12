@@ -8,12 +8,9 @@ from textual.events import Resize
 
 from lookout_tui.config import TUIConfig
 from lookout_tui.keys import ci
-from lookout_tui.screens.batch import BatchGridScreen
-from lookout_tui.screens.browser import PatternBrowserScreen
-from lookout_tui.screens.config_editor import ConfigEditorScreen
-from lookout_tui.screens.dashboard import DashboardScreen
-from lookout_tui.screens.generation import GenerationPipelineScreen
-from lookout_tui.screens.registry import RegistryScreen
+from lookout_tui.screens.batch import BatchScreen
+from lookout_tui.screens.patterns import PatternsScreen
+from lookout_tui.screens.settings import SettingsScreen
 
 
 class LookoutApp(App[None]):
@@ -24,26 +21,18 @@ class LookoutApp(App[None]):
     CSS_PATH = "styles/app.tcss"
 
     BINDINGS = [
-        # Tier 1 — Global keys (§2.2)
         Binding("f1", "help", "Help", priority=True),
         Binding("question_mark", "help", "Help", priority=True, show=False),
-        Binding("f3", "go_home", "Home", priority=True, show=False),
         *ci("q", "quit", "Quit", priority=True),
-        # Tier 3 — Screen mnemonics (§2.2)
-        *ci("b", "switch_screen('browser')", "Browser", priority=True),
-        *ci("e", "switch_screen('registry')", "Registry", priority=True),
-        *ci("g", "switch_screen('generation')", "Generate", priority=True),
-        *ci("c", "switch_screen('config')", "Config", priority=True),
-        *ci("t", "switch_screen('batch')", "Batch", priority=True),
+        Binding("1", "switch_screen('patterns')", "Patterns", priority=True),
+        Binding("2", "switch_screen('batch')", "Batch", priority=True),
+        Binding("3", "switch_screen('settings')", "Settings", priority=True),
     ]
 
     SCREENS = {
-        "dashboard": DashboardScreen,
-        "browser": PatternBrowserScreen,
-        "registry": RegistryScreen,
-        "generation": GenerationPipelineScreen,
-        "config": ConfigEditorScreen,
-        "batch": BatchGridScreen,
+        "patterns": PatternsScreen,
+        "batch": BatchScreen,
+        "settings": SettingsScreen,
     }
 
     def __init__(self) -> None:
@@ -51,19 +40,15 @@ class LookoutApp(App[None]):
         self.tui_config = TUIConfig()
 
     def on_mount(self) -> None:
-        self.push_screen("dashboard")
-
-    def action_go_home(self) -> None:
-        """Switch to the dashboard home screen."""
-        self.switch_screen("dashboard")
+        self.push_screen("patterns")
 
     def action_help(self) -> None:
         self.notify(
-            "Lookout TUI — b:Browser e:Registry g:Generate c:Config t:Batch Esc:Home q:Quit"
+            "Lookout TUI — 1:Patterns 2:Batch 3:Settings ?:Help q:Quit"
         )
 
     def on_resize(self, event: Resize) -> None:
-        """Apply responsive breakpoint CSS classes per §1.6."""
+        """Apply responsive breakpoint CSS classes."""
         cols = event.size.width
         if cols < 80:
             new_bp = "compact"

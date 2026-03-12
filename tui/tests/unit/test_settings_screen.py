@@ -1,26 +1,37 @@
-"""Tests for ConfigEditorScreen and TUIConfig catalog management."""
+"""Tests for the SettingsScreen."""
 
 from __future__ import annotations
 
 from lookout_tui.catalog import DEFAULT_FRAMEWORKS, DEFAULT_LANGUAGES
 from lookout_tui.config import TUIConfig
-from lookout_tui.screens.config_editor import ConfigEditorScreen
+from lookout_tui.screens.settings import SettingsScreen
 
 
-class TestConfigEditorScreen:
-    def test_screen_has_save_binding(self) -> None:
-        bindings = {b.key for b in ConfigEditorScreen.BINDINGS}
+class TestSettingsScreenBindings:
+    def test_has_save_binding(self) -> None:
+        bindings = {b.key for b in SettingsScreen.BINDINGS}
         assert "ctrl+s" in bindings
 
-    def test_screen_has_escape_binding(self) -> None:
-        bindings = {b.key for b in ConfigEditorScreen.BINDINGS}
-        assert "escape" in bindings
-
-    def test_screen_has_add_delete_bindings(self) -> None:
-        bindings = {b.key for b in ConfigEditorScreen.BINDINGS}
+    def test_has_add_delete_bindings(self) -> None:
+        bindings = {b.key for b in SettingsScreen.BINDINGS}
         assert "a" in bindings
         assert "d" in bindings
 
+    def test_case_insensitive_bindings(self) -> None:
+        bindings = {b.key for b in SettingsScreen.BINDINGS}
+        for key in ("a", "d"):
+            assert key in bindings
+            assert key.upper() in bindings
+
+
+class TestSettingsScreenInit:
+    def test_initial_state(self) -> None:
+        screen = SettingsScreen()
+        assert screen._pending_model is None
+        assert screen._active_table is None
+
+
+class TestTUIConfigValues:
     def test_parse_config_values(self) -> None:
         config = TUIConfig(
             llm_model="anthropic/claude-sonnet-4-20250514",

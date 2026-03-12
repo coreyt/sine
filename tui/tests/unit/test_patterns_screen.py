@@ -1,4 +1,4 @@
-"""Tests for the RegistryScreen and ContextPanel content builders."""
+"""Tests for the PatternsScreen."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from lookout.models import (
 from lookout.registry import save_pattern
 
 from lookout_tui.pipeline.models import GenerationStage, StageResult, StageStatus
+from lookout_tui.screens.patterns import PatternsScreen
 from lookout_tui.widgets.context_panel import (
     build_generation_text,
     build_pattern_text,
@@ -57,6 +58,65 @@ def _spec(
             variants=variants or [],
         ),
     )
+
+
+class TestPatternsScreenBindings:
+    def test_has_generate_binding(self) -> None:
+        bindings = {b.key for b in PatternsScreen.BINDINGS}
+        assert "g" in bindings
+
+    def test_has_add_binding(self) -> None:
+        bindings = {b.key for b in PatternsScreen.BINDINGS}
+        assert "a" in bindings
+
+    def test_has_write_binding(self) -> None:
+        bindings = {b.key for b in PatternsScreen.BINDINGS}
+        assert "w" in bindings
+
+    def test_has_deprecate_binding(self) -> None:
+        bindings = {b.key for b in PatternsScreen.BINDINGS}
+        assert "d" in bindings
+
+    def test_has_yank_binding(self) -> None:
+        bindings = {b.key for b in PatternsScreen.BINDINGS}
+        assert "y" in bindings
+
+    def test_has_approve_reject_bindings(self) -> None:
+        bindings = {b.key for b in PatternsScreen.BINDINGS}
+        assert "ctrl+a" in bindings
+        assert "ctrl+x" in bindings
+
+    def test_has_filter_binding(self) -> None:
+        bindings = {b.key for b in PatternsScreen.BINDINGS}
+        assert "slash" in bindings
+
+    def test_has_refresh_binding(self) -> None:
+        bindings = {b.key for b in PatternsScreen.BINDINGS}
+        assert "r" in bindings
+        assert "f5" in bindings
+
+    def test_has_escape_binding(self) -> None:
+        bindings = {b.key for b in PatternsScreen.BINDINGS}
+        assert "escape" in bindings
+
+    def test_case_insensitive_bindings(self) -> None:
+        bindings = {b.key for b in PatternsScreen.BINDINGS}
+        for key in ("g", "a", "d", "w", "y", "r"):
+            assert key in bindings, f"Missing lowercase {key}"
+            assert key.upper() in bindings, f"Missing uppercase {key}"
+
+
+class TestPatternsScreenInit:
+    def test_initial_mode_is_detail(self) -> None:
+        screen = PatternsScreen()
+        assert screen._mode == "detail"
+
+    def test_initial_state(self) -> None:
+        screen = PatternsScreen()
+        assert screen._current_node is None
+        assert screen._generation_result is None
+        assert screen._pipeline is None
+        assert screen._new_pattern_counter == 0
 
 
 class TestBuildPatternText:
@@ -164,7 +224,6 @@ class TestSelectDialog:
 
 class TestReplacePatternNodeSync:
     def test_current_node_updated_after_replace(self) -> None:
-        """After _replace_pattern, _current_node should reference the new spec."""
         from lookout.models import PatternDiscoveryCheck
         from lookout.registry import add_language_variant
 
@@ -172,13 +231,12 @@ class TestReplacePatternNodeSync:
         check = PatternDiscoveryCheck(type="pattern_discovery", patterns=["$X(...)"])
         updated = add_language_variant(spec, "python", check)
 
-        # Update node
         new_node = PatternNodeData(spec=updated)
         assert len(new_node.spec.pattern.variants) == 1
         assert new_node.spec.pattern.variants[0].language == "python"
 
 
-class TestRegistryScreenHelpers:
+class TestPatternsScreenHelpers:
     def test_save_and_load_roundtrip(self, tmp_path: Path) -> None:
         spec = _spec(id="ROUND-001")
         save_pattern(spec, tmp_path)
@@ -200,3 +258,30 @@ class TestRegistryScreenHelpers:
 
         fn = FrameworkNodeData(spec=spec, language="python", framework="django")
         assert fn.framework == "django"
+
+
+class TestReplacePattern:
+    def test_replace_updates_list(self) -> None:
+        screen = PatternsScreen()
+        spec1 = _spec(id="REP-001", status="draft")
+        spec2 = _spec(id="REP-001", status="active")
+        screen._patterns = [spec1]
+        screen._replace_pattern(spec1, spec2)
+        assert screen._patterns[0].pattern.status == "active"
+
+    def test_replace_appends_if_not_found(self) -> None:
+        screen = PatternsScreen()
+        spec = _spec(id="NEW-001")
+        screen._patterns = []
+        screen._replace_pattern(spec, spec)
+        assert len(screen._patterns) == 1
+
+    def test_replace_syncs_current_node(self) -> None:
+        screen = PatternsScreen()
+        spec1 = _spec(id="SYNC-002", status="draft")
+        spec2 = _spec(id="SYNC-002", status="active")
+        screen._patterns = [spec1]
+        screen._current_node = PatternNodeData(spec=spec1)
+        screen._replace_pattern(spec1, spec2)
+        assert screen._current_node is not None
+        assert screen._current_node.spec.pattern.status == "active"

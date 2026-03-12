@@ -48,3 +48,13 @@ htmlcov/
 
 .wake/*
 !.wake/shared/
+.env
+.env.*
+*.pyc
+*.pyo
+.venv/
+node_modules/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+Thumbs.db
